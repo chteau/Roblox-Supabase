@@ -1,21 +1,21 @@
-local Rest = require(script.Parent.Rest)
-local Storage = require(script.Parent.Storage)
-local EdgeFunctions = require(script.Parent.EdgeFunctions)
-local UnitTests = require(script.Parent.UnitTests)
+local Rest = require(script.Rest)
+local Storage = require(script.Storage)
+local EdgeFunctions = require(script.EdgeFunctions)
+local UnitTests = require(script.UnitTests)
 local RunService = game:GetService("RunService")
 
 local Supabase = {}
 Supabase.__index = Supabase
 
 -- Import types from Rest module
-local RestTypes = require(script.Parent.Rest.Types)
+local RestTypes = require(script.Rest.Types)
 export type RootQuery = RestTypes.RootQuery
 
 export type SupabaseClient = {
-    rest: any, -- Rest.RestClient
+    rest: Rest.RestClient,
     storage: any, -- Storage.StorageClient
-    functions: any, -- EdgeFunctions.FunctionsClient
-    _unitTests: any, -- UnitTests.UnitTests
+    functions: EdgeFunctions.FunctionsClient,
+    _unitTests: UnitTests.UnitTests,
     from: (self: SupabaseClient, tableName: string) -> RootQuery,
 }
 

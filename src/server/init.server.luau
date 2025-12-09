@@ -1,4 +1,4 @@
-local Supabase = require(script.Supabase.Client)
+local Supabase = require(script.Supabase)
 
 print("Server tests")
 
