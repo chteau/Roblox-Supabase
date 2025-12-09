@@ -8,12 +8,5 @@ local Client = Supabase.createClient({
 })
 
 print("Client created", Client)
-print("Table fetch test")
 
-local _, Error = Client
-    :from("Scripts")
-    :select("id, poop")
-    :eq("id", 2)
-    :execute()
-
-print("Result:", _, Error)
+-- Client._unitTests:runAllTests()

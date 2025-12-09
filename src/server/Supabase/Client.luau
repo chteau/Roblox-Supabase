@@ -1,16 +1,22 @@
 local Rest = require(script.Parent.Rest)
 local Storage = require(script.Parent.Storage)
 local EdgeFunctions = require(script.Parent.EdgeFunctions)
+local UnitTests = require(script.Parent.UnitTests)
 local RunService = game:GetService("RunService")
 
 local Supabase = {}
 Supabase.__index = Supabase
 
+-- Import types from Rest module
+local RestTypes = require(script.Parent.Rest.Types)
+export type RootQuery = RestTypes.RootQuery
+
 export type SupabaseClient = {
-    rest: Rest.RestClient,
-    storage: Storage.StorageClient,
-    functions: EdgeFunctions.FunctionsClient,
-    from: (self: any, tableName: string) -> Rest.Query,
+    rest: any, -- Rest.RestClient
+    storage: any, -- Storage.StorageClient
+    functions: any, -- EdgeFunctions.FunctionsClient
+    _unitTests: any, -- UnitTests.UnitTests
+    from: (self: SupabaseClient, tableName: string) -> RootQuery,
 }
 
 -- Backwards-compatible constructor
@@ -30,15 +36,18 @@ function Supabase.new(baseUrl: string, key: string): SupabaseClient
     self.functions = EdgeFunctions.new(baseUrl, key)
 
     -- Proxy convenience so callers can do: client:from("table"):select("*"):execute()
-    function self:from(tableName: string)
+    function self:from(tableName: string): RootQuery
         return self.rest:from(tableName)
     end
+
+    -- Addtional unit tests module
+    self._unitTests = UnitTests.new(self)
 
     return (self :: any) :: SupabaseClient
 end
 
 -- TypeScript-like factory using a config table
-function Supabase.createClient(config: { url: string, apiKey: string })
+function Supabase.createClient(config: { url: string, apiKey: string }): SupabaseClient
     assert(type(config) == "table", "createClient expects a config table")
     assert(type(config.url) == "string", "config.url must be a string")
     assert(type(config.apiKey) == "string", "config.apiKey must be a string")
