@@ -11,13 +11,40 @@
 
 <hr />
 
-## Running Unit Tests
+## Features
 
-### Prerequisites
+### PostgREST API Support
+- **Filter Operations**: Equality, inequality, comparison (gt, lt, gte, lte)
+- **Text Search**: `like()`, `ilike()`, full-text search with generated columns
+- **Array Operations**: `contains()`, `containedBy()`, `overlaps()`
+- **JSON Operations**: JSONB containment, partial matching
+- **Range Operations**: Date, integer, numeric, and timestamp range queries
+- **NULL Handling**: `is()`, `isNot()` for null/not-null checks
+- **IN Operations**: Multiple value matching with `in_()`
+
+### Query Capabilities
+- **Complex Filtering**: Combine multiple conditions with AND/OR logic
+- **Modifiers**: Ordering, limiting, pagination (`range()`)
+- **Response Formats**: CSV, minimal returns, single/maybeSingle row retrieval
+- **Compound Queries**: Filter chains with proper precedence
+
+### Data Mutations
+- **CRUD Operations**: `insert()`, `update()`, `upsert()`, `delete()`
+- **Batch Operations**: Multi-row inserts and updates
+- **Conditional Updates**: Update with WHERE clauses
+
+### Edge Functions
+- **Function Invocation**: `invoke()` with payload support
+- **Error Handling**: Proper error responses for missing functions
+- **Type Safety**: Structured request/response handling
+
+## Prerequisites
 
 - A [Supabase](https://supabase.com/) project set up
 - Roblox Studio with HTTP requests enabled
 - Your Supabase project URL and API key
+
+## Running Unit Tests
 
 ### Database Setup
 
