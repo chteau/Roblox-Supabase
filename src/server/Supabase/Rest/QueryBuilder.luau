@@ -18,7 +18,6 @@ local QueryMutations = require(script.Parent.QueryMutations)
 -- Re-export types for internal use
 local Types = require(script.Parent.Types)
 export type OrFilterOptions = Types.OrFilterOptions
-export type TextSearchOptions = Types.TextSearchOptions
 export type InsertOptions = Types.InsertOptions
 export type UpdateOptions = Types.UpdateOptions
 export type DeleteOptions = Types.DeleteOptions

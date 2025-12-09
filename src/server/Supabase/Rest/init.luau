@@ -13,7 +13,6 @@ local QueryBuilder = require(script.QueryBuilder)
 
 -- Re-export types
 export type OrFilterOptions = Types.OrFilterOptions
-export type TextSearchOptions = Types.TextSearchOptions
 export type InsertOptions = Types.InsertOptions
 export type UpdateOptions = Types.UpdateOptions
 export type DeleteOptions = Types.DeleteOptions
