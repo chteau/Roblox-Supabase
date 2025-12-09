@@ -11,7 +11,6 @@ local Http = game:GetService("HttpService")
 -- Re-export types for internal use
 local Types = require(script.Parent.Types)
 export type OrFilterOptions = Types.OrFilterOptions
-export type TextSearchOptions = Types.TextSearchOptions
 
 --[[
 	Adds a filter with the specified operator to the query.
