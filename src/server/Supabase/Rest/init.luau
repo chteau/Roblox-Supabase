@@ -2,7 +2,6 @@
 	The main REST client class for interacting with Supabase PostgREST API.
 
 	@module Rest
-	@client
 ]]
 local Rest = {}
 Rest.__index = Rest

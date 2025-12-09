@@ -1,10 +1,16 @@
+--[[
+	The main Supabase Edge Functions client for invoking serverless functions.
+
+	@module Rest
+]]
 local Http = game:GetService("HttpService")
 
 local Functions = {}
 Functions.__index = Functions
 
 export type FunctionsClient = {
-    invoke: (self: FunctionsClient, functionName: string, payload: table?) -> any,
+    invoke: (self: FunctionsClient, functionName: string, payload: table?) -> (any, string?),
+    invokeRaw: (self: FunctionsClient, functionName: string, payload: table?) -> (table, string?),
 }
 
 function Functions.new(baseUrl: string, key: string): FunctionsClient
@@ -16,7 +22,15 @@ function Functions.new(baseUrl: string, key: string): FunctionsClient
     return (self :: any) :: FunctionsClient
 end
 
-function Functions:invoke(functionName: string, payload: table?): any
+--[[
+    Invokes a Supabase Edge Function and returns the parsed JSON response.
+
+    @param functionName string -- Name of the Edge Function to invoke
+    @param payload table? -- Optional payload to send to the function
+    @return any -- Parsed JSON response
+    @return string? -- Error message if any
+]]
+function Functions:invoke(functionName: string, payload: table?): (any, string?)
     local body = if payload then Http:JSONEncode(payload) else nil
 
     local res = Http:RequestAsync({
@@ -31,10 +45,88 @@ function Functions:invoke(functionName: string, payload: table?): any
     })
 
     if not res.Success then
-        error("HTTP Request failed: " .. res.StatusMessage)
+        -- Try to parse error response
+        local errorMessage = res.StatusMessage
+        if res.Body and res.Body ~= "" then
+            local ok, errData = pcall(function()
+                return Http:JSONDecode(res.Body)
+            end)
+            if ok and errData and errData.message then
+                errorMessage = errData.message
+            elseif ok and errData and errData.error then
+                errorMessage = errData.error
+            end
+        end
+        return nil, ("Edge Function '%s' failed: %s"):format(functionName, errorMessage)
     end
 
-    return Http:JSONDecode(res.Body)
+    -- Handle empty response
+    if res.Body == nil or res.Body == "" then
+        return nil, nil
+    end
+
+    -- Check content type for parsing
+    local contentType = res.Headers["Content-Type"] or res.Headers["content-type"]
+
+    -- Plain text response
+    if contentType and string.find(contentType, "text/") then
+        return res.Body, nil
+    end
+
+    -- JSON response
+    if contentType and string.find(contentType, "application/json") then
+        local ok, decoded = pcall(function()
+            return Http:JSONDecode(res.Body)
+        end)
+
+        if not ok then
+            return nil, "Failed to parse Edge Function response as JSON"
+        end
+
+        return decoded, nil
+    end
+
+    -- Fallback
+    local ok, decoded = pcall(function()
+        return Http:JSONDecode(res.Body)
+    end)
+
+    --
+
+    if not ok then
+        return nil, "Failed to parse Edge Function response as JSON"
+    end
+
+    return decoded, nil
+end
+
+--[[
+    Invokes a Supabase Edge Function and returns the raw HTTP response.
+
+    @param functionName string -- Name of the Edge Function to invoke
+    @param payload table? -- Optional payload to send to the function
+    @return table -- Raw HTTP response table
+    @return string? -- Error message if any
+]]
+function Functions:invokeRaw(functionName: string, payload: table?): (table, string?)
+    local body = if payload then Http:JSONEncode(payload) else nil
+
+    local res = Http:RequestAsync({
+        Url = self.baseUrl .. "/" .. functionName,
+        Method = "POST",
+        Headers = {
+            ["apikey"] = self.key,
+            ["Authorization"] = "Bearer " .. self.key,
+            ["Content-Type"] = "application/json",
+        },
+        Body = body,
+    })
+
+    if not res.Success then
+        return nil, ("Edge Function '%s' failed: %s"):format(functionName, res.StatusMessage)
+    end
+
+    return res, nil
 end
 
 return Functions

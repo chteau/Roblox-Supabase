@@ -11,6 +11,13 @@
 local UnitTests = {}
 UnitTests.__index = UnitTests
 
+export type UnitTests = {
+    client: any, -- SupabaseClient
+
+    new: (client: any) -> UnitTests,
+    runAllTests: (self: UnitTests) -> (),
+}
+
 --[[
     Creates a new UnitTests instance.
 
@@ -877,6 +884,67 @@ function UnitTests:runComplexQueriesTest()
 end
 
 --[[
+    Tests basic Edge Function invocation.
+
+    Tests the invoke method with and without payloads, expecting proper JSON responses.
+    Note: This test requires you to have at least one Edge Function deployed.
+
+    @throws AssertionError if tests fail
+]]
+function UnitTests:runEdgeFunctionsTest()
+    print("SUPABASE> Running Edge Functions Test...")
+
+    local functions = {
+        {
+            name = "hello-world",
+            payload = nil,
+            expectedResponse = "Hello, World!" -- Plain text response
+        },
+        {
+            name = "test-echo",
+            payload = { text = "Supabase Edge Functions" },
+            expectedResponse = { text = "Supabase Edge Functions" }
+        },
+        {
+            name = "non-existent-function",
+            payload = nil,
+            expectedError = true
+        }
+    }
+
+    -- Iterate through each function test case
+    for _, func in ipairs(functions) do
+        local Data, Error = nil, nil
+        if func.payload then
+            Data, Error = self.client.functions
+                :invoke(func.name, func.payload)
+        else
+            Data, Error = self.client.functions
+                :invoke(func.name)
+        end
+
+        if func.expectedError then
+            assert(Error ~= nil, "SUPABASE> Edge Function test failed: expected error for function '" .. func.name .. "'")
+        else
+            assert(Error == nil, "SUPABASE> Edge Function test failed: unexpected error for function '" .. func.name .. "': " .. tostring(Error))
+            if type(func.expectedResponse) == "table" then
+                for key, value in pairs(func.expectedResponse) do
+                    assert(Data[key] == value,
+                        "SUPABASE> Edge Function test failed: function '" .. func.name .. "' expected key '" .. key ..
+                        "' to be '" .. tostring(value) .. "', got '" .. tostring(Data[key]) .. "'")
+                end
+            else
+                assert(Data == func.expectedResponse,
+                    "SUPABASE> Edge Function test failed: function '" .. func.name ..
+                    "' expected response '" .. tostring(func.expectedResponse) .. "', got '" .. tostring(Data) .. "'")
+            end
+        end
+    end
+
+    print("SUPABASE> Edge Functions Test Passed.")
+end
+
+--[[
     Runs all unit tests in sequence.
 
     Executes all test categories in the recommended order:
@@ -922,6 +990,10 @@ function UnitTests:runAllTests()
     -- Complex Queries Test
     print("\nSUPABASE> --- COMPLEX QUERY TESTS ---")
     self:runComplexQueriesTest()
+
+    -- Edge Functions Test
+    print("\nSUPABASE> --- EDGE FUNCTIONS TESTS ---")
+    self:runEdgeFunctionsTest()
 
     print("\nSUPABASE> ===========================================")
     print("SUPABASE> All tests completed successfully!")
