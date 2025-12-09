@@ -15,14 +15,15 @@
 
 ### Prerequisites
 
-- A [Supabase](https://supabase.com/) project set-up.
-- Roblox Studio with HTTP requests enabled.
+- A [Supabase](https://supabase.com/) project set up
+- Roblox Studio with HTTP requests enabled
+- Your Supabase project URL and API key
 
-### Setting Up
+### Database Setup
 
-To run the unit tests, you will need to create a new table in your supabase database as follows:
+To run the unit tests, you need to create the `unittests` table in your Supabase database. Execute the following SQL in your Supabase SQL editor:
+
 ```sql
-
 create table public.unittests (
     id serial not null,
     uuid uuid not null default gen_random_uuid (),
@@ -70,20 +71,378 @@ create table public.unittests (
     ) STORED null
 ) TABLESPACE pg_default;
 ```
-This table will be used by the unit tests to perform various operations and validate the functionality of the Supabase client.
 
-In order for the tests to run correctly, you will also have to insert those rows into the `unittests` table:
+### Test Data Insertion
+
+After creating the table, insert the test data using the following SQL:
 
 ```sql
-
-INSERT INTO public.unittests ("id", "uuid", "email", "name", "description", "full_text_content", "age", "price", "rating", "score", "big_number", "is_active", "is_verified", "created_at", "updated_at", "date_of_birth", "time_of_day", "tags", "status", "category", "valid_daterange", "valid_int8range", "valid_numrange", "valid_tsrange", "metadata", "preferences", "ip_address", "mac_address", "point_coord", "phone_number", "website_url", "external_id", "search_vector") VALUES ('1', '4fa11b25-811c-4c5c-850a-f47f80729c71', 'john.doe@example.com', 'John Doe', 'A software developer with 5 years of experience.', 'John Doe is a software developer specializing in backend systems and database design. He enjoys working with distributed systems and microservices architecture.', '30', '99.99', '4.5', '85.5', '1000000', 'true', 'true', '2025-12-09 14:12:04.316978+00', '2025-12-09 16:13:30.929152+00', '1993-12-05', '09:30:00', ARRAY["developer","backend","postgresql"], 'active', 'technology', '[2024-01-01,2024-12-31)', '[1,1001)', '[0.0,100.0]', '["2024-01-01 00:00:00","2024-12-31 23:59:59")', '{"level":"senior","skills":["python","sql","docker"],"department":"engineering"}', '{"theme":"dark","language":"en","notifications":true}', '192.168.1.1', '08:00:27:00:00:01', '(40.7128,-74.006)', '+1-555-123-4567', 'https://johndoe.dev', 'ext_001', ''5':7 'architectur':32 'backend':19 'databas':22 'design':23 'develop':5,16 'distribut':28 'doe':2,12 'enjoy':25 'experi':10 'john':1,11 'microservic':31 'softwar':4,15 'special':17 'system':20,29 'work':26 'year':8'), ('2', '7f226552-6b74-49d5-8be7-818de11a4347', 'jane.smith@example.com', 'Jane Smith', 'Product manager with focus on user experience.', 'Jane Smith leads product development teams to create user-friendly applications. She focuses on agile methodologies and user-centered design principles.', '28', '149.99', '4.7', '92.3', '2000000', 'true', 'false', '2025-12-09 14:17:01.725774+00', '2025-12-09 16:13:39.116626+00', '1995-02-08', '14:15:00', ARRAY["manager","product","ux"], 'pending', 'management', '[2024-02-01,2024-11-30)', '[1001,2001)', '[100.1,200.0]', '["2024-02-01 00:00:00","2024-11-30 23:59:59")', '{"level":"mid","skills":["agile","research","analytics"],"department":"product"}', '{"theme":"light","language":"fr","notifications":false}', '10.0.0.1', '08:00:27:00:00:02', '(51.5074,-0.1278)', '+44-20-1234-5678', 'https://janesmith.com', 'ext_002', ''agil':25 'applic':21 'center':30 'creat':17 'design':31 'develop':14 'experi':9 'focus':6,23 'friend':20 'jane':1,10 'lead':12 'manag':4 'methodolog':26 'principl':32 'product':3,13 'smith':2,11 'team':15 'user':8,19,29 'user-cent':28 'user-friend':18'), ('3', '4a27a94d-49c7-4a89-8ae3-6e596de16dd4', 'bob.johnson@example.com', 'Bob Johnson', 'Data scientist working with machine learning.', 'Bob Johnson applies statistical models and machine learning algorithms to extract insights from large datasets. He specializes in predictive analytics and data visualization.', '35', '79.99', '4.2', '78.9', '1500000', 'false', 'true', '2025-12-09 14:19:30.59008+00', '2025-12-09 16:13:49.664087+00', '1988-12-10', '16:45:00', ARRAY["data","ml","analytics"], 'inactive', 'data-science', '[2023-01-01,2023-12-31)', '[2001,3001)', '[200.1,300.0]', '["2023-01-01 00:00:00","2023-12-31 23:59:59")', '{"level":"senior","skills":["python","r","tensorflow"],"department":"research"}', '{"theme":"dark","language":"en","notifications":true}', '172.16.0.1', '08:00:27:00:00:03', '(35.6762,139.6503)', '+81-3-1234-5678', 'https://bobjohnson.ai', 'ext_003', ''algorithm':17 'analyt':28 'appli':11 'bob':1,9 'data':3,30 'dataset':23 'extract':19 'insight':20 'johnson':2,10 'larg':22 'learn':8,16 'machin':7,15 'model':13 'predict':27 'scientist':4 'special':25 'statist':12 'visual':31 'work':5'), ('4', 'ed3d2af7-69d5-467f-a79c-9a9a07a9d4f5', 'alice.williams@example.com', 'Alice Williams', null, 'Alice Williams is a UX designer with a passion for accessibility and inclusive design.', '25', null, '3.9', null, '500000', 'true', 'false', '2025-12-09 14:21:17.059558+00', '2025-12-09 16:13:59.228304+00', '1998-12-03', null, ARRAY["design","ux","accessibility"], 'pending', 'design', null, null, null, null, '{"skills":["figma","sketch","adobe-xd"],"department":"design"}', '{}', null, null, null, null, null, 'ext_004', ''access':13 'alic':1,3 'design':8,16 'inclus':15 'passion':11 'ux':7 'william':2,4'), ('5', '88427365-1625-4282-b279-4b93468430ce', 'search.test@example.com', 'Search Test User', 'This record contains specific keywords for text search testing.', 'PostgreSQL is a powerful, open source object-relational database system. It has more than 15 years of active development and a proven architecture that has earned it a strong reputation for reliability, data integrity, and correctness. This is a test for full text search capabilities including phrases and websearch queries.', '42', '299.99', '4.9', '99.9', '9999999', 'true', 'true', '2025-12-09 14:24:06.245535+00', '2025-12-09 16:14:30.766485+00', '1981-01-01', '12:00:00', ARRAY["search","test","fulltext","postgresql","database"], 'active', 'search-test', '[2024-01-01,2024-12-31)', '[999999,10000001)', '[999.9,1000.0]', '["2024-01-01 00:00:00","2024-12-31 23:59:59")', '{"keywords":["postgresql","database","search","fulltext"],"importance":"high"}', '{"search_enabled":true,"results_per_page":50}', '8.8.8.8', '08:00:27:00:00:06', '(0,0)', '+1-800-SEARCH', 'https://postgresql.org', 'ext_006', ''15':28 'activ':31 'architectur':36 'capabl':58 'contain':6 'correct':49 'data':46 'databas':22 'develop':32 'earn':39 'full':55 'includ':59 'integr':47 'keyword':8 'object':20 'object-rel':19 'open':17 'phrase':60 'postgresql':13 'power':16 'proven':35 'queri':63 'record':5 'relat':21 'reliabl':45 'reput':43 'search':1,11,57 'sourc':18 'specif':7 'strong':42 'system':23 'test':2,12,53 'text':10,56 'user':3 'websearch':62 'year':29'), ('6', '28e150f9-e612-44f3-be39-bae4684f98d1', 'array.test@example.com', 'Array Test', 'Testing array contains, contained by, and overlap operations.', 'This record has specific tags for array operation testing.', '29', '49.99', '3.5', '65', '750000', 'true', 'true', '2025-12-09 14:26:30.850607+00', '2025-12-09 16:14:41.248013+00', '1994-03-09', '18:30:00', ARRAY["a","b","c","d","e","f","g"], 'pending', 'array-test', '[2024-04-01,2024-09-30)', '[5000,6001)', '[400.1,500.0]', '["2024-04-01 00:00:00","2024-09-30 23:59:59")', '{"mixed":["text",123,true],"nested":[1,2,3],"array_test":true}', '{"array_field":[1,2,3,4,5]}', '10.10.10.10', '08:00:27:00:00:07', '(45,90)', '+1-555-ARRAY', 'https://array.test', 'ext_007', ''array':1,4,17 'contain':5,6 'oper':10,18 'overlap':9 'record':12 'specif':14 'tag':15 'test':2,3,19'), ('7', '94922643-8eed-4a4e-bd9a-a99d549b70bf', 'json.test@example.com', 'JSON Test', 'Testing JSON and JSONB operators.', 'This record has complex JSON structures for testing JSON operators.', '33', '399.99', '4.6', '88.8', '8888888', 'false', 'false', '2025-12-09 14:29:44.453187+00', '2025-12-09 16:14:48.922569+00', '1990-11-11', '22:22:00', ARRAY["json","jsonb","test"], 'active', 'json-test', '[2024-05-01,2024-08-31)', '[7000,8001)', '[600.1,700.0]', '["2024-05-01 00:00:00","2024-08-31 23:59:59")', '{"tags":["json","test"],"user":{"age":33,"name":"JSON Test","active":false},"nested":{"level1":{"level2":{"level3":"deep"}}},"settings":{"theme":"dark","notifications":{"push":false,"email":true}},"permissions":["read","write","execute"]}', '{"complex":{"null":null,"array":[1,{"nested":"object"},3],"boolean":true}}', '255.255.255.255', 'ff:ff:ff:ff:ff:ff', '(-90,-180)', '+1-555-JSON', 'https://json.test', 'ext_008', ''complex':11 'json':1,4,12,16 'jsonb':6 'oper':7,17 'record':9 'structur':13 'test':2,3,15'), ('8', 'a51ab58d-d62c-40b3-9707-6f5f5f000c59', 'range.test@example.com', 'Range Test', 'Testing range operators (range_gt, range_gte, range_lt, range_lte, range_adjacent).', 'This record has various range types for testing range operators.', '45', '599.99', '2.5', '33.3', '3333333', 'true', 'true', '2025-12-09 14:31:40.181437+00', '2025-12-09 16:14:57.308863+00', '1978-06-06', '06:06:06', ARRAY["range","test"], 'inactive', 'range-test', '[2024-06-01,2024-07-31)', '[8001,9001)', '[700.1,800.0]', '["2024-06-01 06:00:00","2024-07-31 18:00:00")', '{"range_tests":{"int":"[8001, 9000]","date":"[2024-06-01, 2024-07-31)"}}', '{"range_pref":"[0, 100]"}', '127.0.0.1', '00:00:00:00:00:00', '(90,0)', '+1-555-RANGE', 'https://range.test', 'ext_009', ''adjac':15 'gt':7 'gte':9 'lt':11 'lte':13 'oper':5,25 'rang':1,4,6,8,10,12,14,20,24 'record':17 'test':2,3,23 'type':21 'various':19'), ('9', '58b00ad3-298c-4151-8fb8-78c13f55f8ac', 'minimal@example.com', 'Minimal Record', null, null, '18', '0.00', '0', '0', '0', 'false', 'false', '2025-12-09 14:33:07.34315+00', '2025-12-09 16:15:04.507464+00', null, null, ARRAY[], 'pending', null, null, null, null, null, '{}', '{}', null, null, null, null, null, 'ext_010', ''minim':1 'record':2');
-
+INSERT INTO
+  public.unittests (
+    "id",
+    "uuid",
+    "email",
+    "name",
+    "description",
+    "full_text_content",
+    "age",
+    "price",
+    "rating",
+    "score",
+    "big_number",
+    "is_active",
+    "is_verified",
+    "created_at",
+    "updated_at",
+    "date_of_birth",
+    "time_of_day",
+    "tags",
+    "status",
+    "category",
+    "valid_daterange",
+    "valid_int8range",
+    "valid_numrange",
+    "valid_tsrange",
+    "metadata",
+    "preferences",
+    "ip_address",
+    "mac_address",
+    "point_coord",
+    "phone_number",
+    "website_url",
+    "external_id",
+    "search_vector"
+  )
+VALUES
+  (
+    '1',
+    '4fa11b25-811c-4c5c-850a-f47f80729c71',
+    'john.doe@example.com',
+    'John Doe',
+    'A software developer with 5 years of experience.',
+    'John Doe is a software developer specializing in backend systems and database design. He enjoys working with distributed systems and microservices architecture.',
+    '30',
+    '99.99',
+    '4.5',
+    '85.5',
+    '1000000',
+    'true',
+    'true',
+    '2025-12-09 14:12:04.316978+00',
+    '2025-12-09 16:13:30.929152+00',
+    '1993-12-05',
+    '09:30:00',
+    ARRAY["developer", "backend", "postgresql"],
+    'active',
+    'technology',
+    '[2024-01-01,2024-12-31)',
+    '[1,1001)',
+    '[0.0,100.0]',
+    '["2024-01-01 00:00:00","2024-12-31 23:59:59")',
+    '{"level":"senior","skills":["python","sql","docker"],"department":"engineering"}',
+    '{"theme":"dark","language":"en","notifications":true}',
+    '192.168.1.1',
+    '08:00:27:00:00:01',
+    '(40.7128,-74.006)',
+    '+1-555-123-4567',
+    'https://johndoe.dev',
+    'ext_001',
+    '' 5 ':7 ' architectur ':32 ' backend ':19 ' databas ':22 ' design ':23 ' develop ':5,16 ' distribut ':28 ' doe ':2,12 ' enjoy ':25 ' experi ':10 ' john ':1,11 ' microservic ':31 ' softwar ':4,15 ' special ':17 ' SYSTEM ':20,29 ' WORK ':26 ' YEAR ':8'
+  ),
+  (
+    '2',
+    '7f226552-6b74-49d5-8be7-818de11a4347',
+    'jane.smith@example.com',
+    'Jane Smith',
+    'Product manager with focus on user experience.',
+    'Jane Smith leads product development teams to create user-friendly applications. She focuses on agile methodologies and user-centered design principles.',
+    '28',
+    '149.99',
+    '4.7',
+    '92.3',
+    '2000000',
+    'true',
+    'false',
+    '2025-12-09 14:17:01.725774+00',
+    '2025-12-09 16:13:39.116626+00',
+    '1995-02-08',
+    '14:15:00',
+    ARRAY["manager", "product", "ux"],
+    'pending',
+    'management',
+    '[2024-02-01,2024-11-30)',
+    '[1001,2001)',
+    '[100.1,200.0]',
+    '["2024-02-01 00:00:00","2024-11-30 23:59:59")',
+    '{"level":"mid","skills":["agile","research","analytics"],"department":"product"}',
+    '{"theme":"light","language":"fr","notifications":false}',
+    '10.0.0.1',
+    '08:00:27:00:00:02',
+    '(51.5074,-0.1278)',
+    '+44-20-1234-5678',
+    'https://janesmith.com',
+    'ext_002',
+    '' agil ':25 ' applic ':21 ' center ':30 ' creat ':17 ' design ':31 ' develop ':14 ' experi ':9 ' focus ':6,23 ' friend ':20 ' jane ':1,10 ' lead ':12 ' manag ':4 ' methodolog ':26 ' principl ':32 ' product ':3,13 ' smith ':2,11 ' team ':15 ' USER ':8,19,29 ' USER - cent ':28 ' USER - friend ':18'
+  ),
+  (
+    '3',
+    '4a27a94d-49c7-4a89-8ae3-6e596de16dd4',
+    'bob.johnson@example.com',
+    'Bob Johnson',
+    'Data scientist working with machine learning.',
+    'Bob Johnson applies statistical models and machine learning algorithms to extract insights from large datasets. He specializes in predictive analytics and data visualization.',
+    '35',
+    '79.99',
+    '4.2',
+    '78.9',
+    '1500000',
+    'false',
+    'true',
+    '2025-12-09 14:19:30.59008+00',
+    '2025-12-09 16:13:49.664087+00',
+    '1988-12-10',
+    '16:45:00',
+    ARRAY["data", "ml", "analytics"],
+    'inactive',
+    'data-science',
+    '[2023-01-01,2023-12-31)',
+    '[2001,3001)',
+    '[200.1,300.0]',
+    '["2023-01-01 00:00:00","2023-12-31 23:59:59")',
+    '{"level":"senior","skills":["python","r","tensorflow"],"department":"research"}',
+    '{"theme":"dark","language":"en","notifications":true}',
+    '172.16.0.1',
+    '08:00:27:00:00:03',
+    '(35.6762,139.6503)',
+    '+81-3-1234-5678',
+    'https://bobjohnson.ai',
+    'ext_003',
+    '' algorithm ':17 ' analyt ':28 ' appli ':11 ' bob ':1,9 ' DATA ':3,30 ' dataset ':23 ' EXTRACT ':19 ' insight ':20 ' johnson ':2,10 ' larg ':22 ' learn ':8,16 ' machin ':7,15 ' model ':13 ' predict ':27 ' scientist ':4 ' special ':25 ' statist ':12 ' visual ':31 ' WORK ':5'
+  ),
+  (
+    '4',
+    'ed3d2af7-69d5-467f-a79c-9a9a07a9d4f5',
+    'alice.williams@example.com',
+    'Alice Williams',
+    NULL,
+    'Alice Williams is a UX designer with a passion for accessibility and inclusive design.',
+    '25',
+    NULL,
+    '3.9',
+    NULL,
+    '500000',
+    'true',
+    'false',
+    '2025-12-09 14:21:17.059558+00',
+    '2025-12-09 16:13:59.228304+00',
+    '1998-12-03',
+    NULL,
+    ARRAY["design", "ux", "accessibility"],
+    'pending',
+    'design',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    '{"skills":["figma","sketch","adobe-xd"],"department":"design"}',
+    '{}',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    'ext_004',
+    '' ACCESS ':13 ' alic ':1,3 ' design ':8,16 ' inclus ':15 ' passion ':11 ' ux ':7 ' william ':2,4'
+  ),
+  (
+    '5',
+    '88427365-1625-4282-b279-4b93468430ce',
+    'search.test@example.com',
+    'Search Test User',
+    'This record contains specific keywords for text search testing.',
+    'PostgreSQL is a powerful, open source object-relational database system. It has more than 15 years of active development and a proven architecture that has earned it a strong reputation for reliability, data integrity, and correctness. This is a test for full text search capabilities including phrases and websearch queries.',
+    '42',
+    '299.99',
+    '4.9',
+    '99.9',
+    '9999999',
+    'true',
+    'true',
+    '2025-12-09 14:24:06.245535+00',
+    '2025-12-09 16:14:30.766485+00',
+    '1981-01-01',
+    '12:00:00',
+    ARRAY[
+      "search",
+      "test",
+      "fulltext",
+      "postgresql",
+      "database"
+    ],
+    'active',
+    'search-test',
+    '[2024-01-01,2024-12-31)',
+    '[999999,10000001)',
+    '[999.9,1000.0]',
+    '["2024-01-01 00:00:00","2024-12-31 23:59:59")',
+    '{"keywords":["postgresql","database","search","fulltext"],"importance":"high"}',
+    '{"search_enabled":true,"results_per_page":50}',
+    '8.8.8.8',
+    '08:00:27:00:00:06',
+    '(0,0)',
+    '+1-800-SEARCH',
+    'https://postgresql.org',
+    'ext_006',
+    '' 15 ':28 ' activ ':31 ' architectur ':36 ' capabl ':58 ' contain ':6 ' correct ':49 ' DATA ':46 ' databas ':22 ' develop ':32 ' earn ':39 ' FULL ':55 ' includ ':59 ' integr ':47 ' keyword ':8 ' OBJECT ':20 ' OBJECT - rel ':19 ' OPEN ':17 ' phrase ':60 ' postgresql ':13 ' power ':16 ' proven ':35 ' queri ':63 ' record ':5 ' relat ':21 ' reliabl ':45 ' reput ':43 ' SEARCH ':1,11,57 ' sourc ':18 ' specif ':7 ' strong ':42 ' SYSTEM ':23 ' test ':2,12,53 ' TEXT ':10,56 ' USER ':3 ' websearch ':62 ' YEAR ':29'
+  ),
+  (
+    '6',
+    '28e150f9-e612-44f3-be39-bae4684f98d1',
+    'array.test@example.com',
+    'Array Test',
+    'Testing array contains, contained by, and overlap operations.',
+    'This record has specific tags for array operation testing.',
+    '29',
+    '49.99',
+    '3.5',
+    '65',
+    '750000',
+    'true',
+    'true',
+    '2025-12-09 14:26:30.850607+00',
+    '2025-12-09 16:14:41.248013+00',
+    '1994-03-09',
+    '18:30:00',
+    ARRAY["a", "b", "c", "d", "e", "f", "g"],
+    'pending',
+    'array-test',
+    '[2024-04-01,2024-09-30)',
+    '[5000,6001)',
+    '[400.1,500.0]',
+    '["2024-04-01 00:00:00","2024-09-30 23:59:59")',
+    '{"mixed":["text",123,true],"nested":[1,2,3],"array_test":true}',
+    '{"array_field":[1,2,3,4,5]}',
+    '10.10.10.10',
+    '08:00:27:00:00:07',
+    '(45,90)',
+    '+1-555-ARRAY',
+    'https://array.test',
+    'ext_007',
+    '' ARRAY ':1,4,17 ' contain ':5,6 ' oper ':10,18 ' overlap ':9 ' record ':12 ' specif ':14 ' tag ':15 ' test ':2,3,19'
+  ),
+  (
+    '7',
+    '94922643-8eed-4a4e-bd9a-a99d549b70bf',
+    'json.test@example.com',
+    'JSON Test',
+    'Testing JSON and JSONB operators.',
+    'This record has complex JSON structures for testing JSON operators.',
+    '33',
+    '399.99',
+    '4.6',
+    '88.8',
+    '8888888',
+    'false',
+    'false',
+    '2025-12-09 14:29:44.453187+00',
+    '2025-12-09 16:14:48.922569+00',
+    '1990-11-11',
+    '22:22:00',
+    ARRAY["json", "jsonb", "test"],
+    'active',
+    'json-test',
+    '[2024-05-01,2024-08-31)',
+    '[7000,8001)',
+    '[600.1,700.0]',
+    '["2024-05-01 00:00:00","2024-08-31 23:59:59")',
+    '{"tags":["json","test"],"user":{"age":33,"name":"JSON Test","active":false},"nested":{"level1":{"level2":{"level3":"deep"}}},"settings":{"theme":"dark","notifications":{"push":false,"email":true}},"permissions":["read","write","execute"]}',
+    '{"complex":{"null":null,"array":[1,{"nested":"object"},3],"boolean":true}}',
+    '255.255.255.255',
+    'ff:ff:ff:ff:ff:ff',
+    '(-90,-180)',
+    '+1-555-JSON',
+    'https://json.test',
+    'ext_008',
+    '' complex ':11 ' JSON ':1,4,12,16 ' JSONB ':6 ' oper ':7,17 ' record ':9 ' structur ':13 ' test ':2,3,15'
+  ),
+  (
+    '8',
+    'a51ab58d-d62c-40b3-9707-6f5f5f000c59',
+    'range.test@example.com',
+    'Range Test',
+    'Testing range operators (range_gt, range_gte, range_lt, range_lte, range_adjacent).',
+    'This record has various range types for testing range operators.',
+    '45',
+    '599.99',
+    '2.5',
+    '33.3',
+    '3333333',
+    'true',
+    'true',
+    '2025-12-09 14:31:40.181437+00',
+    '2025-12-09 16:14:57.308863+00',
+    '1978-06-06',
+    '06:06:06',
+    ARRAY["range", "test"],
+    'inactive',
+    'range-test',
+    '[2024-06-01,2024-07-31)',
+    '[8001,9001)',
+    '[700.1,800.0]',
+    '["2024-06-01 06:00:00","2024-07-31 18:00:00")',
+    '{"range_tests":{"int":"[8001, 9000]","date":"[2024-06-01, 2024-07-31)"}}',
+    '{"range_pref":"[0, 100]"}',
+    '127.0.0.1',
+    '00:00:00:00:00:00',
+    '(90,0)',
+    '+1-555-RANGE',
+    'https://range.test',
+    'ext_009',
+    '' adjac ':15 ' gt ':7 ' gte ':9 ' lt ':11 ' lte ':13 ' oper ':5,25 ' rang ':1,4,6,8,10,12,14,20,24 ' record ':17 ' test ':2,3,23 ' TYPE ':21 ' various ':19'
+  ),
+  (
+    '9',
+    '58b00ad3-298c-4151-8fb8-78c13f55f8ac',
+    'minimal@example.com',
+    'Minimal Record',
+    NULL,
+    NULL,
+    '18',
+    '0.00',
+    '0',
+    '0',
+    '0',
+    'false',
+    'false',
+    '2025-12-09 14:33:07.34315+00',
+    '2025-12-09 16:15:04.507464+00',
+    NULL,
+    NULL,
+    ARRAY[],
+    'pending',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    '{}',
+    '{}',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    'ext_010',
+    '' minim ':1 ' record ':2'
+  );
 ```
 
-You will also need to set up the following edge function in your Supabase project for testing edge functions. You can directly set up the functions in the Supabase dashboard and paste the code below:
+### Edge Functions Setup
 
+For Edge Functions testing, deploy these functions to your Supabase project:
+
+**Function**: `hello-world`
 ```ts
-// Function name: hello-world
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 Deno.serve(async (req: Request) => {
@@ -93,8 +452,8 @@ Deno.serve(async (req: Request) => {
 });
 ```
 
+**Function**: `test-echo`
 ```ts
-// Function name: test-echo
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 interface reqPayload {
     text: string;
@@ -112,9 +471,9 @@ Deno.serve(async (req: Request) => {
 });
 ```
 
-### Running the Tests
+### Executing Tests
 
-Directly in a **server script** within Roblox Studio, you can run the unit tests by invoking the following code snippet:
+In a **server script** within Roblox Studio, run the unit tests with the following code:
 
 ```lua
 local Supabase = require(--[[ path to Supabase module --]])
@@ -126,4 +485,45 @@ local Client = Supabase.createClient({
 
 -- Run all unit tests
 Client._unitTests:runAllTests()
+
+-- Or run specific test categories
+-- Client._unitTests:runEqualityTest()
+-- Client._unitTests:runMutationTests()
+-- Client._unitTests:runEdgeFunctionsTest()
 ```
+
+### Test Categories
+
+The comprehensive test suite includes:
+1. **Filter Tests**: Equality, inequality, comparison, text search, and array operations
+2. **Modifier Tests**: Ordering, limiting, pagination, and response formats
+3. **Mutation Tests**: CRUD operations (insert, update, upsert, delete)
+4. **Edge Functions Tests**: Function invocation with various payloads
+5. **Complex Query Tests**: Multi-condition queries with combined filters
+
+### Expected Outcomes
+
+When tests run successfully, you'll see output similar to:
+
+```
+SUPABASE> ===========================================
+SUPABASE> Running Supabase Unit Tests...
+SUPABASE> Testing against actual database records
+SUPABASE> ===========================================
+
+SUPABASE> --- FILTER TESTS ---
+SUPABASE> Running Equality Test...
+SUPABASE> Equality Test Passed.
+...
+
+SUPABASE> ===========================================
+SUPABASE> All tests completed successfully!
+SUPABASE> ===========================================
+```
+
+### Troubleshooting
+
+- **Permission Errors**: Ensure your API key has appropriate permissions for the `unittests` table
+- **Connection Issues**: Verify your Supabase URL and API key are correct
+- **Missing Edge Functions**: Edge Function tests will skip if functions aren't deployed (non-critical)
+- **Data Conflicts**: If tests fail due to existing data, truncate the `unittests` table and re-insert test data
