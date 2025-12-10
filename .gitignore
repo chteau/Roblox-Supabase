@@ -6,3 +6,4 @@
 /*.rbxl.lock
 
 sourcemap.json
+src/server/init.server.luau
