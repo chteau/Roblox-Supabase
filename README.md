@@ -5,10 +5,11 @@
     </a>
     <h3 align="center">Roblox - Supabase Client</h3>
     <div align="center">
-        <img src="https://img.shields.io/badge/Supabase-181818?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Badge" />
-        <img src="https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white" alt="Lua Badge" />
+        <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Badge" />
+        <img src="https://img.shields.io/badge/Luau-3057FD?style=for-the-badge&logo=lua&logoColor=white" alt="Luau Badge" />
         <img src="https://img.shields.io/badge/Roblox-%230a0b0b.svg?style=for-the-badge&logo=Roblox&logoColor=white" alt="Roblox Badge" />
     </div>
+    <br>
     <p align="center">
         A comprehensive, type-safe Supabase client for Roblox Luau, providing full access to PostgREST API, Storage, and Edge Functions. Built specifically for Roblox's server-side environment with Rojo workflow compatibility.
     </p>
