@@ -15,8 +15,6 @@
     </p>
 </div>
 
-<hr />
-
 ## Features
 
 ### PostgREST API Support
