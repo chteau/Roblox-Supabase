@@ -1,0 +1,282 @@
+---
+title: Insert Data
+description: Insert new rows into your PostgreSQL database using the Supabase client.
+icon: BetweenHorizontalStart
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# `insert(data: {[string]: any} | {[string]: any}[], options: InsertOptions?)`
+
+The `insert()` method creates new rows in a PostgreSQL table. This method returns an object that allows you to specify what data to return from the inserted rows.
+
+## Method Signature
+
+<TypeTable
+    type={{
+        insert: {
+            description: "Inserts new rows into the table.",
+            type: 'function(data: {[string]: any} | {[string]: any}[], options: InsertOptions?)',
+            parameters: [
+                {
+                    name: "data",
+                    type: "{[string]: any} | {[string]: any}[]",
+                    description: "Object or array of objects containing column-value pairs to insert.",
+                    required: true
+                },
+                {
+                    name: "options",
+                    type: "InsertOptions?",
+                    description: "Optional configuration for the insert operation.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+## Insert Options
+
+You can configure the insert operation using [`InsertOptions`](/docs/types#insertoptions).
+
+## Basic Usage
+
+```lua
+-- Insert a single row
+local result, err = client
+    :from("players")
+    :insert({
+        username = "NewPlayer",
+        level = 1,
+        experience = 0,
+        status = "active"
+    })
+    :execute()
+
+if err then
+    warn("Insert failed:", err)
+else
+    print("Inserted player ID:", result[1].id)
+end
+```
+
+## Complete Examples
+
+### Example 1: Insert Single Row with Full Return
+
+```lua
+-- Insert a player and return all columns
+local newPlayer, err = client
+    :from("players")
+    :insert({
+        username = "DragonSlayer",
+        level = 1,
+        experience = 0,
+        email = "dragon@example.com",
+        status = "active"
+    })
+    :select("*")
+    :single()
+    :execute()
+
+if err then
+    warn("Failed to insert player:", err)
+else
+    print("New player created with ID:", newPlayer.id)
+end
+```
+
+### Example 2: Insert Multiple Rows
+
+```lua
+-- Insert multiple players at once
+local players, err = client
+    :from("players")
+    :insert({
+        {
+            username = "Warrior",
+            level = 1,
+            class = "warrior"
+        },
+        {
+            username = "Mage",
+            level = 1,
+            class = "mage"
+        },
+        {
+            username = "Rogue",
+            level = 1,
+            class = "rogue"
+        }
+    })
+    :select("id, username, class")
+    :execute()
+
+if err then
+    warn("Batch insert failed:", err)
+else
+    for _, player in ipairs(players) do
+        print(string.format("Created %s (%s) with ID: %d",
+            player.username, player.class, player.id))
+    end
+end
+```
+
+### Example 3: Minimal Return (No Data)
+
+```lua
+-- Insert with minimal return (just success/failure)
+local success, err = client
+    :from("game_logs")
+    :insert({
+        player_id = 123,
+        action = "login",
+        created_at = os.date("!%Y-%m-%d %H:%M:%S")
+    })
+    :returns("minimal")
+    :execute()
+
+if err then
+    warn("Log insertion failed:", err)
+else
+    print("Log entry created successfully")
+end
+```
+
+### Example 4: Insert with Default Values
+
+```lua
+-- Insert using database defaults for some columns
+local result, err = client
+    :from("players")
+    :insert({
+        username = "DefaultUser",
+        -- level will use default value (e.g., 1)
+        -- created_at will use default (CURRENT_TIMESTAMP)
+    })
+    :select("*")
+    :single()
+    :execute()
+```
+
+### Example 5: Insert with Type Validation
+
+```lua
+-- Define a type for validation
+type PlayerInsert = {
+    username: string,
+    level: number,
+    experience: number?,
+    email: string?,
+    status: string
+}
+
+-- Insert with type validation
+local player: PlayerInsert = {
+    username = "TypeSafePlayer",
+    level = 5,
+    experience = 1000,
+    status = "active"
+}
+
+local result, err = client
+    :from("players")
+    :insert(player)
+    :executeTyped()
+
+if err then
+    warn("Type validation failed:", err)
+end
+```
+
+## Method Chaining Order
+
+### Correct Order
+```lua
+-- Start with from(), then insert(), then modifiers
+local result = client
+    :from("players")       -- Step 1: Select table
+    :insert({              -- Step 2: Insert data
+        username = "TestPlayer",
+        level = 1
+    })
+    :select("*")           -- Step 3: Specify return columns (optional)
+    :single()              -- Step 4: Expect single row (optional)
+    :execute()             -- Step 5: Execute
+```
+
+### Insert-Specific Modifiers
+```lua
+-- Insert with different return formats
+local result = client
+    :from("players")
+    :insert({username = "CSVTest", level = 1})
+    :csv()                 -- Request CSV format
+    :execute()
+```
+
+## Error Handling
+
+### Common Insert Errors
+
+```lua
+-- Missing required column
+local result, err = client
+    :from("players")
+    :insert({
+        -- Forgot required 'username' field
+        level = 1
+    })
+    :execute()
+
+if err then
+    warn("Insert err:", err)  -- "null value in column 'username' violates not-null constraint"
+end
+
+-- Duplicate unique constraint
+local result, err = client
+    :from("players")
+    :insert({
+        username = "ExistingPlayer",  -- Already exists
+        level = 1
+    })
+    :execute()
+
+if err then
+    warn("Duplicate err:", err)  -- "duplicate key value violates unique constraint"
+end
+```
+
+### Graceful Error Handling
+
+```lua
+local function safeInsert(tableName, data)
+    local result, err = client
+        :from(tableName)
+        :insert(data)
+        :returns("minimal")
+        :execute()
+
+    if err then
+        -- Check for specific error types
+        if string.find(err, "duplicate key") then
+            warn("Duplicate entry detected")
+            return false, "duplicate"
+        elseif string.find(err, "null value") then
+            warn("Missing required field")
+            return false, "missing_field"
+        else
+            warn(string.format("Insert into %s failed: %s", tableName, err))
+            return false, "unknown_err"
+        end
+    end
+
+    return true, nil
+end
+
+-- Usage
+local success, errType = safeInsert("players", {
+    username = "TestPlayer",
+    level = 1
+})
+```

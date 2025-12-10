@@ -120,7 +120,7 @@ function Supabase.new(baseUrl: string, key: string): SupabaseClient
 	-- Internal unit testing module for comprehensive validation
 	self._unitTests = UnitTests.new(self)
 
-	return (self :: any) :: SupabaseClient
+	return (self :: SupabaseClient) :: SupabaseClient
 end
 
 --[[

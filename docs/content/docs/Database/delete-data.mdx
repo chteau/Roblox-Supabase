@@ -1,0 +1,359 @@
+---
+title: Delete Data
+description: Delete rows from your PostgreSQL database using the Supabase client.
+icon: Eraser
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# `delete(options: DeleteOptions?)`
+
+<Callout title="`delete()` can be combined with filters and returns() modifier." type="warning" />
+
+The `delete()` method removes rows from a PostgreSQL table. This method returns an object that allows you to filter which rows to delete and specify what data to return from the deleted rows. **Use with caution as deleted data cannot be recovered.**
+
+## Method Signature
+
+<TypeTable
+    type={{
+        delete: {
+            description: "Deletes rows from the table.",
+            type: 'function(options: DeleteOptions?)',
+            returns: "DeleteQuery",
+            parameters: [
+                {
+                    name: "options",
+                    type: "DeleteOptions?",
+                    description: "Optional configuration for the delete operation.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+## Delete Options
+
+You can configure the delete operation using [`DeleteOptions`](/docs/types#deleteoptions)
+
+## Basic Usage
+
+```lua
+-- Delete a single row by ID
+local result, err = client
+    :from("players")
+    :delete()
+    :eq("id", 123)
+    :execute()
+
+if err then
+    warn("Delete failed:", err)
+else
+    print("Deleted", #result, "row(s)")
+end
+```
+
+## Complete Examples
+
+### Example 1: Delete Single Row with Full Return
+
+```lua
+-- Delete a player and return the deleted data
+local deletedPlayer, err = client
+    :from("players")
+    :delete()
+    :eq("id", 123)
+    :select("*")
+    :single()
+    :execute()
+
+if err then
+    warn("Failed to delete player:", err)
+else
+    print("Deleted player:", deletedPlayer.username, "ID:", deletedPlayer.id)
+end
+```
+
+### Example 2: Delete Multiple Rows with Conditions
+
+```lua
+-- Delete all inactive players who haven't logged in for 30 days
+local result, err = client
+    :from("players")
+    :delete()
+    :eq("status", "inactive")
+    :lt("last_login", os.date("!%Y-%m-%d", os.time() - 30 * 24 * 60 * 60))
+    :execute()
+
+if err then
+    warn("Batch delete failed:", err)
+else
+    print("Deleted", #result, "inactive players")
+end
+```
+
+### Example 3: Minimal Return (No Data)
+
+```lua
+-- Delete with minimal return (just success/failure)
+local success, err = client
+    :from("temporary_data")
+    :delete()
+    :lt("expires_at", os.date("!%Y-%m-%d %H:%M:%S"))
+    :returns("minimal")
+    :execute()
+
+if err then
+    warn("Cleanup failed:", err)
+else
+    print("Expired data cleaned up successfully")
+end
+```
+
+### Example 4: Delete with Complex Conditions
+
+```lua
+-- Delete low-level players who haven't logged in for a year
+local result, err = client
+    :from("players")
+    :delete()
+    :lt("level", 5)
+    :lt("last_login", "2023-01-01")
+    :eq("status", "inactive")
+    :execute()
+
+if err then
+    warn("Complex delete failed:", err)
+else
+    print("Cleaned up", #result, "inactive low-level players")
+end
+```
+
+### Example 5: Delete with Type Validation
+
+```lua
+-- Define a type for validation
+type DeletedPlayer = {
+    id: number,
+    username: string,
+    level: number,
+    deleted_at: string
+}
+
+-- Delete with type validation on returned data
+local deletedPlayers: {DeletedPlayer}, err = client
+    :from("players")
+    :delete()
+    :eq("status", "test_account")
+    :executeTyped()
+
+if err then
+    warn("Type validation failed:", err)
+else
+    for _, player in ipairs(deletedPlayers) do
+        print("Deleted test account:", player.username)
+    end
+end
+```
+
+### Example 6: Delete with OR Conditions
+
+```lua
+-- Delete players who are either inactive OR have negative balance
+local result, err = client
+    :from("players")
+    :delete()
+    :or_("status.eq.inactive,balance.lt.0")
+    :execute()
+
+if err then
+    warn("OR delete failed:", err)
+else
+    print("Deleted", #result, "players with OR conditions")
+end
+```
+
+## Method Chaining Order
+
+### Correct Order
+```lua
+-- Start with from(), then delete(), then filters, then modifiers
+local result = client
+    :from("players")        -- Step 1: Select table
+    :delete()               -- Step 2: Initiate delete
+    :eq("id", 123)          -- Step 3: Apply filters (required!)
+    :returns("representation") -- Step 4: Specify return format (optional)
+    :execute()              -- Step 5: Execute
+```
+
+### ⚠️ CRITICAL: Filters are REQUIRED for delete()
+```lua
+-- ⚠️ DANGER: This will delete ALL rows in the table!
+local result = client
+    :from("players")
+    :delete()               -- No filter - deletes EVERY player!
+    :execute()
+
+-- ALWAYS use filters to target specific rows
+local safeResult = client
+    :from("players")
+    :delete()
+    :eq("id", 123)          -- Specific filter
+    :execute()
+```
+
+## Common Patterns
+
+### Soft Delete Pattern (Recommended)
+
+```lua
+-- Instead of hard delete, mark as deleted (soft delete)
+local result, err = client
+    :from("players")
+    :update({
+        deleted = true,
+        deleted_at = os.date("!%Y-%m-%d %H:%M:%S"),
+        deleted_by = "system_cleanup"
+    })
+    :lt("last_login", "2023-01-01")
+    :eq("deleted", false)
+    :execute()
+
+-- Later, you can permanently delete soft-deleted records
+local permanentDelete = client
+    :from("players")
+    :delete()
+    :eq("deleted", true)
+    :lt("deleted_at", os.date("!%Y-%m-%d", os.time() - 90 * 24 * 60 * 60)) -- 90 days ago
+    :execute()
+```
+
+### Delete with Cascade Pattern
+
+```lua
+-- Delete player and their related data (if cascade is set up in DB)
+local deletedPlayer, err = client
+    :from("players")
+    :delete()
+    :eq("id", 123)
+    :select("*, inventory(*), achievements(*)")
+    :single()
+    :execute()
+
+-- Note: This requires ON DELETE CASCADE in your database schema
+```
+
+### Archive Before Delete Pattern
+
+```lua
+-- Archive data before deleting
+local function archiveAndDelete(playerId)
+    -- First, archive the data
+    local playerData = client
+        :from("players")
+        :select("*")
+        :eq("id", playerId)
+        :single()
+        :execute()
+
+    if playerData then
+        -- Insert into archive table
+        client
+            :from("players_archive")
+            :insert({
+                original_id = playerData.id,
+                data = playerData,
+                archived_at = os.date("!%Y-%m-%d %H:%M:%S"),
+                archived_by = "system"
+            })
+            :execute()
+
+        -- Then delete from main table
+        client
+            :from("players")
+            :delete()
+            :eq("id", playerId)
+            :returns("minimal")
+            :execute()
+
+        return true
+    end
+
+    return false
+end
+```
+
+## Error Handling
+
+### Common Delete Errors
+
+```lua
+-- Foreign key constraint violation
+local result, err = client
+    :from("categories")
+    :delete()
+    :eq("id", 1)
+    :execute()
+
+if err then
+    warn("Delete err:", err)
+    -- "update or delete on table 'categories' violates foreign key constraint"
+    -- "on table 'products', Key (category_id)=(1) is still referenced from table 'products'"
+end
+
+-- No rows matched (not necessarily an err, but check your filter)
+local result, err = client
+    :from("players")
+    :delete()
+    :eq("id", 999999)  -- Non-existent ID
+    :execute()
+
+if #result == 0 then
+    print("No rows were deleted - check your filter conditions")
+end
+```
+
+### Graceful Error Handling with Transaction Safety
+
+```lua
+local function safeDelete(tableName, filterColumn, filterValue)
+    -- First, verify the row exists
+    local existing = client
+        :from(tableName)
+        :select("id")
+        :eq(filterColumn, filterValue)
+        :single()
+        :execute()
+
+    if not existing then
+        return false, "not_found"
+    end
+
+    -- Then perform the delete
+    local result, err = client
+        :from(tableName)
+        :delete()
+        :eq(filterColumn, filterValue)
+        :returns("minimal")
+        :execute()
+
+    if err then
+        -- Check for specific err types
+        if string.find(err, "violates foreign key constraint") then
+            warn("Cannot delete: referenced by other tables")
+            return false, "foreign_key_violation"
+        elseif string.find(err, "null value") then
+            warn("Unexpected null constraint err")
+            return false, "constraint_err"
+        else
+            warn(string.format("Delete from %s failed: %s", tableName, err))
+            return false, "unknown_err"
+        end
+    end
+
+    return true, nil
+end
+
+-- Usage
+local success, errType = safeDelete("players", "id", 123)
+```

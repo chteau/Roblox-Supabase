@@ -1,0 +1,45 @@
+---
+title: Introduction
+description: A comprehensive, type-safe Supabase client for Roblox Luau, providing full access to PostgREST API, Storage, and Edge Functions. Built specifically for Roblox's server-side environment with Rojo workflow compatibility.
+icon: Album
+---
+
+This reference documentation covers every method and capability available in the Roblox Supabase Client, a Luau implementation of Supabase's JavaScript library specifically designed for Roblox Studio.
+
+Feel free to support my work by following my [Roblox profile](https://www.roblox.com/users/925308243/profile).
+
+<hr />
+
+# Features
+
+### PostgREST API Support
+- **Filter Operations**: Equality, inequality, comparison (gt, lt, gte, lte)
+- **Text Search**: `like()`, `ilike()`, full-text search with generated columns
+- **Array Operations**: `contains()`, `containedBy()`, `overlaps()`
+- **JSON Operations**: JSONB containment, partial matching
+- **Range Operations**: Date, integer, numeric, and timestamp range queries
+- **NULL Handling**: `is()`, `isNot()` for null/not-null checks
+- **IN Operations**: Multiple value matching with `in_()`
+
+### Query Capabilities
+- **Complex Filtering**: Combine multiple conditions with AND/OR logic
+- **Modifiers**: Ordering, limiting, pagination (`range()`)
+- **Response Formats**: CSV, minimal returns, single/maybeSingle row retrieval
+- **Compound Queries**: Filter chains with proper precedence
+
+### PostgreSQL RPC Support
+- **Function Calls**: Execute PostgreSQL functions with `rpc()`
+- **Parameter Support**: Pass parameters as JSON objects
+- **Method Flexibility**: Use POST (default) or GET for immutable functions
+- **Filter Chaining**: Apply filters to functions returning tables
+- **Full Modifier Support**: Ordering, limiting, single row retrieval on RPC results
+
+### Data Mutations
+- **CRUD Operations**: `insert()`, `update()`, `upsert()`, `delete()`
+- **Batch Operations**: Multi-row inserts and updates
+- **Conditional Updates**: Update with WHERE clauses
+
+### Edge Functions
+- **Function Invocation**: `invoke()` with payload support
+- **Error Handling**: Proper error responses for missing functions
+- **Type Safety**: Structured request/response handling
