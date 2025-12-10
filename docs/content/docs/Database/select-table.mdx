@@ -1,0 +1,37 @@
+---
+title: Selecting a table
+description: Selecting a table from your database using the Supabase client.
+icon: Table
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# `from(tableName: string)`
+
+The `from()` method is your entry point to database operations in Supabase. It selects a table from your PostgreSQL database and returns a query builder that enables you to construct and execute SQL queries using a fluent, chainable API.
+
+## Parameters
+
+<TypeTable
+    type={{
+        tableName: {
+            type: 'string',
+            description: 'The name of the database table to query. Must be accessible within your Supabase project schema.',
+            required: true
+        }
+    }}
+/>
+
+## Return Value
+
+The `from()` method returns a [**RootQuery**](/docs/types#rootquery) object, which serves as the foundation for building database queries.
+
+## Usage
+
+```lua title="Script.luau"
+-- Assuming you've defined your Supabase client beforehand
+
+local data, error = client
+    :from("TableName")
+    -- Then select the operation you want to execute (i.e. select, insert, update, delete)
+```

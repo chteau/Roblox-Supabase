@@ -1,0 +1,272 @@
+---
+title: Update Data
+description: Update existing rows in your PostgreSQL database using the Supabase client.
+icon: BetweenHorizontalEnd
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# `update(data: {[string]: any}, options: UpdateOptions?)`
+
+<Callout title="`update()` can be combined with filters and returns() modifier." type="info" />
+
+The `update()` method modifies existing rows in a PostgreSQL table. This method returns an object that allows you to filter which rows to update and specify what data to return from the updated rows.
+
+## Method Signature
+
+<TypeTable
+    type={{
+        update: {
+            description: "Updates existing rows in the table.",
+            type: 'function(data: {[string]: any}, options: UpdateOptions?)',
+            returns: "UpdateQuery",
+            parameters: [
+                {
+                    name: "data",
+                    type: "{[string]: any}",
+                    description: "Object containing column-value pairs to update.",
+                    required: true
+                },
+                {
+                    name: "options",
+                    type: "UpdateOptions?",
+                    description: "Optional configuration for the update operation.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+## Update Options
+
+You can configure the update operation using [`UpdateOptions`](/docs/types#updateoptions).
+
+## Basic Usage
+
+```lua
+-- Update a single row by ID
+local result, error = client
+    :from("players")
+    :update({
+        level = 10,
+        experience = 5000,
+        status = "active"
+    })
+    :eq("id", 123)
+    :execute()
+
+if error then
+    warn("Update failed:", error)
+else
+    print("Updated", #result, "row(s)")
+end
+```
+
+## Complete Examples
+
+### Example 1: Update Single Row with Full Return
+
+```lua
+-- Update a player and return all updated columns
+local updatedPlayer, error = client
+    :from("players")
+    :update({
+        level = 20,
+        experience = 10000,
+        last_login = os.date("!%Y-%m-%d %H:%M:%S")
+    })
+    :eq("id", 123)
+    :select("*")
+    :single()
+    :execute()
+
+if error then
+    warn("Failed to update player:", error)
+else
+    print("Player updated. New level:", updatedPlayer.level)
+end
+```
+
+### Example 2: Update Multiple Rows with Conditions
+
+```lua
+-- Update all inactive players to active status
+local result, error = client
+    :from("players")
+    :update({
+        status = "active",
+        updated_at = os.date("!%Y-%m-%d %H:%M:%S")
+    })
+    :eq("status", "inactive")
+    :gt("last_login", "2024-01-01")
+    :execute()
+
+if error then
+    warn("Batch update failed:", error)
+else
+    print("Updated", #result, "players to active status")
+end
+```
+
+### Example 3: Minimal Return (No Data)
+
+```lua
+-- Update with minimal return (just success/failure)
+local success, error = client
+    :from("players")
+    :update({
+        last_seen = os.date("!%Y-%m-%d %H:%M:%S")
+    })
+    :eq("id", 123)
+    :returns("minimal")
+    :execute()
+
+if error then
+    warn("Update failed:", error)
+else
+    print("Last seen timestamp updated successfully")
+end
+```
+
+### Example 4: Update with Complex Conditions
+
+```lua
+-- Update high-level players who haven't logged in recently
+local result, error = client
+    :from("players")
+    :update({
+        status = "inactive",
+        inactive_reason = "inactivity"
+    })
+    :gt("level", 50)
+    :lt("last_login", "2024-01-01")
+    :eq("status", "active")
+    :execute()
+
+if error then
+    warn("Complex update failed:", error)
+else
+    print("Marked", #result, "players as inactive")
+end
+```
+
+### Example 5: Update with Type Validation
+
+```lua
+-- Define a type for validation
+type PlayerUpdate = {
+    level: number,
+    experience: number?,
+    status: string?,
+    last_login: string?
+}
+
+-- Update with type validation
+local updateData: PlayerUpdate = {
+    level = 15,
+    experience = 7500,
+    status = "active",
+    last_login = os.date("!%Y-%m-%d %H:%M:%S")
+}
+
+local result, error = client
+    :from("players")
+    :update(updateData)
+    :eq("id", 123)
+    :executeTyped()
+
+if error then
+    warn("Type validation failed:", error)
+end
+```
+
+## Method Chaining Order
+
+### Correct Order
+```lua
+-- Start with from(), then update(), then filters, then allowed modifiers
+local result = client
+    :from("players")        -- Step 1: Select table
+    :update({               -- Step 2: Update data
+        level = 10,
+        status = "active"
+    })
+    :eq("id", 123)          -- Step 3: Apply filters (required!)
+    :returns("representation") -- Step 4: Specify return format (optional)
+    :execute()              -- Step 5: Execute
+```
+
+### Important: Filters are REQUIRED for update()
+```lua
+-- Always use filters to target specific rows
+local safeResult = client
+    :from("players")
+    :update({status = "active"})
+    :eq("id", 123)  -- Specific filter
+    :execute()
+```
+
+## Error Handling
+
+### Common Update Errors
+
+```lua
+-- No rows matched (not necessarily an error, but check your filter)
+local result, err = client
+    :from("players")
+    :update({level = 10})
+    :eq("id", 999999)  -- Non-existent ID
+    :execute()
+
+if #result == 0 then
+    print("No rows were updated - check your filter conditions")
+end
+
+-- Constraint violation
+local result, err = client
+    :from("players")
+    :update({username = ""})  -- Empty string might violate constraint
+    :eq("id", 123)
+    :execute()
+
+if err then
+    warn("Constraint error:", err)  -- e.g., "violates check constraint"
+end
+```
+
+### Graceful Error Handling
+
+```lua
+local function safeUpdate(tableName, data, filterColumn, filterValue)
+    local result, err = client
+        :from(tableName)
+        :update(data)
+        :eq(filterColumn, filterValue)
+        :returns("minimal")
+        :execute()
+
+    if err then
+        -- Check for specific error types
+        if string.find(err, "violates check constraint") then
+            warn("Invalid data violates constraint")
+            return false, "constraint_violation"
+        elseif string.find(err, "null value") then
+            warn("Cannot set column to null")
+            return false, "null_violation"
+        else
+            warn(string.format("Update on %s failed: %s", tableName, err))
+            return false, "unknown_error"
+        end
+    end
+
+    return true, nil
+end
+
+-- Usage
+local success, errType = safeUpdate("players",
+    {level = 100},
+    "id",
+    123
+)
+```

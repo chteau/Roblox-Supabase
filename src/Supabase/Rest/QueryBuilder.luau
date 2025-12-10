@@ -292,8 +292,15 @@ function QueryBuilder.new(baseUrl, key, tableName, typesModule)
         if not columns or columns == "" then
             columns = "*"
         end
-        self.method = "GET"
-        self.query = "?select=" .. Http:UrlEncode(columns)
+
+        -- Check if select is not called after an insert / update
+        if not (self.body and (self.method == "POST" or self.method == "PATCH")) then
+            self.method = "GET"
+            self.query = "?select=" .. Http:UrlEncode(columns)
+        else
+            self.query = self.query .. "&select=" .. Http:UrlEncode(columns)
+        end
+
         return self
     end
 

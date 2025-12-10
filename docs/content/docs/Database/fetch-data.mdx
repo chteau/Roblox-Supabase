@@ -1,0 +1,304 @@
+---
+title: Fetch Data
+description: Fetch data from your PostgreSQL database using the Supabase client.
+icon: Search
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# `select(columns: string?)`
+
+<Callout title="`select()` can be combined with filters and modifiers." type="info" />
+
+The `select()` method specifies which columns to retrieve from a table in your PostgreSQL database. This method initiates a SELECT query and returns an object that supports filtering, ordering, limiting, and other query modifiers.
+
+## Method Signature
+
+<TypeTable
+    type={{
+        select: {
+            description: "Specifies which columns to retrieve from the table.",
+            type: 'function(columns: string)',
+            parameters: [
+                {
+                    name: "columns",
+                    type: "string",
+                    description: "Comma-separated list of column names. Use '*' for all columns, or 'column1, column2, related_table(*)' for joins.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+## Basic Usage
+
+```lua
+-- Select all columns from a table
+local data, err = client
+    :from("players")
+    :select("*")
+    :execute()
+
+if err then
+    warn("Query failed:", err)
+else
+    for _, player in ipairs(data) do
+        print(player.username, player.level)
+    end
+end
+```
+
+## Column Selection Patterns
+
+### Select All Columns
+
+```lua
+-- Get all columns from the table
+local allData = client
+    :from("players")
+    :select("*") -- You can also just type `:select()` to select all columns.
+    :execute()
+```
+
+### Select Specific Columns
+
+```lua
+-- Get only specific columns
+local partialData = client
+    :from("players")
+    :select("id, username, level, created_at")
+    :execute()
+```
+
+### Select with Related Data
+
+```lua
+-- Get player data with their inventory and achievements
+-- Note: Requires proper foreign key relationships in your database
+local playerWithRelations = client
+    :from("players")
+    :select("*, inventory(*), achievements(*)")
+    :eq("id", playerId)
+    :single()
+    :execute()
+```
+
+## Complete Examples
+
+### Example 1: Basic Data Retrieval
+
+```lua
+-- Get all active players with their basic info
+local activePlayers, err = client
+    :from("players")
+    :select("id, username, level, status")
+    :eq("status", "active")
+    :execute()
+
+if err then
+    warn("Failed to fetch players:", err)
+else
+    for _, player in ipairs(activePlayers) do
+        print(string.format("Player: %s (Level: %d)", player.username, player.level))
+    end
+end
+```
+
+### Example 2: Using Filters and Modifiers
+
+```lua
+-- Get top 10 players by level
+local topPlayers, err = client
+    :from("players")
+    :select("username, level, experience")
+    :gt("level", 10)
+    :order("level", { ascending = false })
+    :limit(10)
+    :execute()
+```
+
+### Example 3: Type-Safe Execution
+
+```lua
+-- Define your table type
+type Player = {
+    id: number,
+    username: string,
+    level: number,
+    experience: number,
+    created_at: string,
+    updated_at: string,
+}
+
+-- Use executeTyped() for runtime type validation
+local players: {Player}, err: string? = client
+    :from("players")
+    :select("*")
+    :executeTyped()
+
+if err then
+    warn("Type validation failed:", err)
+end
+```
+
+### Example 4: Complex Query with Multiple Filters and Modifiers
+
+```lua
+-- Find high-level players who joined recently and are active
+local recentHighLevelPlayers, err = client
+    :from("players")
+    :select("id, username, level, created_at")
+    :gte("level", 50)
+    :eq("status", "active")
+    :gte("created_at", "2024-01-01")
+    :order("created_at", { ascending = false })
+    :limit(20)
+    :execute()
+```
+
+## Method Chaining Order
+
+### Correct Order
+```lua
+-- Start with from(), then select(), then filters, then modifiers
+local result = client
+    :from("players")       -- Step 1: Select table
+    :select("*")           -- Step 2: Specify columns
+    :eq("status", "active") -- Step 3: Apply filters
+    :order("level")        -- Step 4: Apply modifiers
+    :limit(10)             -- Step 5: Apply modifiers
+    :execute()             -- Step 6: Execute
+```
+
+### Incorrect Order (Will err)
+```lua
+local result = client
+    :from("players")
+    :order("level")        -- err: Modifier before select()
+    :select("*")           -- This will throw an err
+    :execute()
+```
+
+## Common Patterns
+
+### Pagination
+
+```lua
+-- Get page 2 of results (rows 11-20)
+local page2 = client
+    :from("players")
+    :select("*")
+    :order("created_at", { ascending = false })
+    :range(11, 20)
+    :execute()
+```
+
+### Single Row Retrieval
+
+```lua
+-- Get exactly one player by ID
+local player = client
+    :from("players")
+    :select("*")
+    :eq("id", 123)
+    :single()
+    :execute()
+
+-- Get one player or nil if not found
+local maybePlayer = client
+    :from("players")
+    :select("*")
+    :eq("id", 999)
+    :maybeSingle()
+    :execute()
+```
+
+### CSV Format Output
+
+```lua
+-- Get data in CSV format
+local csvData = client
+    :from("players")
+    :select("id,username,level")
+    :csv()
+    :execute()
+
+-- csvData will be a string in CSV format
+print(csvData)
+```
+
+## Error Handling
+
+### Common errors
+
+```lua
+-- Column doesn't exist
+local result, err = client
+    :from("players")
+    :select("non_existent_column")  -- Will return an err
+    :execute()
+
+if err then
+    warn("err:", err)  -- "column 'non_existent_column' does not exist"
+end
+
+-- Table doesn't exist
+local result, err = client
+    :from("nonexistent_table")  -- Will return an err
+    :select("*")
+    :execute()
+```
+
+### Graceful Error Handling
+
+```lua
+local function safeSelect(tableName, columns)
+    local result, err = client
+        :from(tableName)
+        :select(columns)
+        :execute()
+
+    if err then
+        -- Log err and return empty table
+        warn(string.format("Select from %s failed: %s", tableName, err))
+        return {}
+    end
+
+    return result
+end
+
+-- Usage
+local players = safeSelect("players", "id, username, level")
+```
+
+## Performance Considerations
+
+### 1. Limit Result Sets
+
+```lua
+-- Always limit large tables
+local limitedResults = client
+    :from("game_logs")  -- Potentially millions of rows
+    :select("*")
+    :limit(1000)  -- Prevent overwhelming response
+    :execute()
+```
+
+### 2. Use Indexed Columns in Filters
+
+```lua
+-- Faster: Filter on indexed column (id)
+local fastQuery = client
+    :from("players")
+    :select("*")
+    :eq("id", 123)  -- id is typically indexed
+    :execute()
+
+-- Slower: Filter on non-indexed column (username without index)
+local slowQuery = client
+    :from("players")
+    :select("*")
+    :eq("username", "some_name")  -- May be slower without index
+    :execute()
+```

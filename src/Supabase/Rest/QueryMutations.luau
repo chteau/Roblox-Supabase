@@ -33,17 +33,16 @@ function QueryMutations:insert(data: table | {table}, options: InsertOptions)
         self._insertOptions.returning = "representation"
     end
 
-    -- Change the metatable to InsertQuery to restrict available methods
     return setmetatable(self, getmetatable(self) --[[@as InsertQuery]])
 end
 
 --[[
 	Updates rows in the table.
-	Returns a FilterableQuery that allows filters.
+	Returns a UpdateQuery that allows filters.
 
 	@param data table -- Data to update
 	@param options UpdateOptions? -- Update options
-	@return FilterableQuery -- Returns filterable query
+	@return UpdateQuery -- Returns filterable query
 ]]
 function QueryMutations:update(data: table, options: UpdateOptions)
     self.method = "PATCH"
@@ -56,8 +55,7 @@ function QueryMutations:update(data: table, options: UpdateOptions)
         self._updateOptions.returning = "representation"
     end
 
-    -- Keep the same metatable (FilterableQuery)
-    return self
+    return setmetatable(self, getmetatable(self) --[[@as UpdateQuery]])
 end
 
 --[[

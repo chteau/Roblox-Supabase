@@ -1,0 +1,19 @@
+{
+    "title": "Roblox-Supabase",
+    "root": true,
+    "pages": [
+        "---Getting Started---",
+        "index",
+        "installation",
+
+        "---Database---",
+        "Database/select-table",
+        "Database/fetch-data",
+        "Database/insert-data",
+        "Database/update-data",
+        "Database/delete-data",
+
+        "---Types---",
+        "types"
+    ]
+}
