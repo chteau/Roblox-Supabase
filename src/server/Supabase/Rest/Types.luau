@@ -223,6 +223,15 @@ export type RootQuery = {
 }
 
 --[[
+    RPC query interface for calling stored procedures.
+
+    @within Rest.Types
+]]
+export type RPCQuery = FilterMethods & ModifierMethods & {
+    get: (self: any) -> RPCQuery,
+}
+
+--[[
 	Main REST client for Supabase PostgREST API.
 
 	@within Rest.Types
