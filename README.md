@@ -7,6 +7,10 @@
     <p align="center">
         A comprehensive, type-safe Supabase client for Roblox Luau, providing full access to PostgREST API, Storage, and Edge Functions. Built specifically for Roblox's server-side environment with Rojo workflow compatibility.
     </p>
+
+    ![Supabase](https://img.shields.io/badge/Supabase-181818?style=for-the-badge&logo=supabase&logoColor=white)
+    ![Lua](https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
+    ![Roblox](https://img.shields.io/badge/Roblox-%230a0b0b.svg?style=for-the-badge&logo=Roblox&logoColor=white)
 </div>
 
 <hr />
@@ -27,6 +31,13 @@
 - **Modifiers**: Ordering, limiting, pagination (`range()`)
 - **Response Formats**: CSV, minimal returns, single/maybeSingle row retrieval
 - **Compound Queries**: Filter chains with proper precedence
+
+### PostgreSQL RPC Support
+- **Function Calls**: Execute PostgreSQL functions with `rpc()`
+- **Parameter Support**: Pass parameters as JSON objects
+- **Method Flexibility**: Use POST (default) or GET for immutable functions
+- **Filter Chaining**: Apply filters to functions returning tables
+- **Full Modifier Support**: Ordering, limiting, single row retrieval on RPC results
 
 ### Data Mutations
 - **CRUD Operations**: `insert()`, `update()`, `upsert()`, `delete()`

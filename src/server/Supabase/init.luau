@@ -10,13 +10,16 @@ Supabase.__index = Supabase
 -- Import types from Rest module
 local RestTypes = require(script.Rest.Types)
 export type RootQuery = RestTypes.RootQuery
+export type RPCQeuery = RestTypes.RPCQuery
 
 export type SupabaseClient = {
     rest: Rest.RestClient,
     storage: any, -- Storage.StorageClient
     functions: EdgeFunctions.FunctionsClient,
     _unitTests: UnitTests.UnitTests,
+
     from: (self: SupabaseClient, tableName: string) -> RootQuery,
+    rpc: (self: SupabaseClient, functionName: string, params: {[string]: any}?) -> RPCQeuery,
 }
 
 -- Backwards-compatible constructor
@@ -38,6 +41,11 @@ function Supabase.new(baseUrl: string, key: string): SupabaseClient
     -- Proxy convenience so callers can do: client:from("table"):select("*"):execute()
     function self:from(tableName: string): RootQuery
         return self.rest:from(tableName)
+    end
+
+    -- Proxy convenience for RPC calls
+    function self:rpc(functionName: string, params: {[string]: any}?): RootQuery
+        return self.rest:rpc(functionName, params)
     end
 
     -- Addtional unit tests module

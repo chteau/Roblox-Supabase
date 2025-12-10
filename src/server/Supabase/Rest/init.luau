@@ -10,6 +10,7 @@ Rest.__index = Rest
 local Utils = require(script.Utils)
 local Types = require(script.Types)
 local QueryBuilder = require(script.QueryBuilder)
+local RPCBuilder = require(script.RPCBuilder)
 
 -- Re-export types
 export type OrFilterOptions = Types.OrFilterOptions
@@ -27,6 +28,7 @@ export type UpdateQuery = Types.UpdateQuery
 export type DeleteQuery = Types.DeleteQuery
 export type UpsertQuery = Types.UpsertQuery
 export type RestClient = Types.RestClient
+export type RPCQuery = Types.RPCQuery
 
 --[[
 	Creates a new Supabase REST client.
@@ -43,8 +45,14 @@ function Rest.new(baseUrl: string, key: string): RestClient
 
     self.baseUrl = baseUrl
     self.key = key
+
     -- Attempt to load types from a `Database.Types` module placed near this script.
     self._typesModule = Utils.tryLoadTypes(script)
+
+    -- RPC method to call Postgres functions directly
+    function self:rpc(functionName: string, params: table?): RPCQuery
+        return RPCBuilder.new(self.baseUrl, self.key, functionName, params, self.typesModule)
+    end
 
     return (self :: any) :: RestClient
 end

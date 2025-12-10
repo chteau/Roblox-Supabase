@@ -945,6 +945,59 @@ function UnitTests:runEdgeFunctionsTest()
 end
 
 --[[
+    Tests basic RPC function calls.
+
+    Tests the rpc method with parameters, expecting proper JSON responses.
+    Note: This test requires you to have at least one RPC function deployed.
+
+    @throws AssertionError if tests fail
+]]
+function UnitTests:runRPCTests()
+    print("SUPABASE> Running RPC Tests...")
+
+    -- Test RPC call with parameters
+    local rpcResult, rpcError = self.client
+        :rpc("test_hello", { name = "Supabase" })
+        :execute()
+
+    assert(rpcError == nil, "SUPABASE> RPC test failed with error: " .. tostring(rpcError))
+    assert(rpcResult ~= nil, "SUPABASE> RPC test returned no data.")
+    assert(rpcResult.message == "Hello, Supabase!", "SUPABASE> RPC test failed: unexpected greeting '" .. tostring(rpcResult.message) .. "'")
+
+
+    -- Test RPC call with filtering
+    local rpcFilterResult, rpcFilterError = self.client
+        :rpc("get_users_by_status", { status_filter = "active" })
+        :order("age", { ascending = true })
+        :limit(2)
+        :execute()
+
+    assert(rpcFilterError == nil, "SUPABASE> RPC filter test failed with error: " .. tostring(rpcFilterError))
+    assert(rpcFilterResult ~= nil and #rpcFilterResult == 2,
+        "SUPABASE> RPC filter test expected 2 records, got " .. (#rpcFilterResult or 0))
+    for _, row in ipairs(rpcFilterResult) do
+        assert(row.status == "active",
+            "SUPABASE> RPC filter test failed: " .. row.name .. " has status '" .. row.status .. "' not 'active'")
+
+        for i = 2, #rpcFilterResult do
+            assert(rpcFilterResult[i].age >= rpcFilterResult[i - 1].age,
+                "SUPABASE> RPC filter test failed: ages not in ascending order at position " .. i)
+        end
+    end
+    assert(rpcFilterError == nil, "SUPABASE> Error in RPC filter test: " .. tostring(rpcFilterError))
+
+    -- Test RPC call with GET method for immutable functions
+    local rpcGetResult, rpcGetError = self.client
+        :rpc("get_current_time")
+        :get()
+        :execute()
+
+    assert(rpcGetError == nil, "SUPABASE> RPC GET test failed with error: " .. tostring(rpcGetError))
+
+    print("SUPABASE> RPC Tests Passed.")
+end
+
+--[[
     Runs all unit tests in sequence.
 
     Executes all test categories in the recommended order:
@@ -994,6 +1047,10 @@ function UnitTests:runAllTests()
     -- Edge Functions Test
     print("\nSUPABASE> --- EDGE FUNCTIONS TESTS ---")
     self:runEdgeFunctionsTest()
+
+    -- RPC Tests
+    print("\nSUPABASE> --- RPC TESTS ---")
+    self:runRPCTests()
 
     print("\nSUPABASE> ===========================================")
     print("SUPABASE> All tests completed successfully!")
