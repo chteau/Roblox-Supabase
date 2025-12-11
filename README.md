@@ -13,10 +13,8 @@
     <p align="center">
         A comprehensive, type-safe Supabase client for Roblox Luau, providing full access to PostgREST API, Storage, and Edge Functions. Built specifically for Roblox's server-side environment with Rojo workflow compatibility.
     </p>
+    <br/>
+    <a align="center" href="https://roblox-supabase.vercel.app/docs">
+        Read the docs
+    </a>
 </div>
-
-## 📖 Documentation
-
-The complete documentation is available at **[roblox-supabase.vercel.app/docs](https://roblox-supabase.vercel.app/docs)**.
-
-You can also find the contribution documentation **[here](https://roblox-supabase.vercel.app/docs/contribute)**.
