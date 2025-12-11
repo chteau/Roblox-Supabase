@@ -10,6 +10,8 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 The `insert()` method creates new rows in a PostgreSQL table. This method returns an object that allows you to specify what data to return from the inserted rows.
 
+---
+
 ## Method Signature
 
 <TypeTable
@@ -35,9 +37,13 @@ The `insert()` method creates new rows in a PostgreSQL table. This method return
     }}
 />
 
+---
+
 ## Insert Options
 
 You can configure the insert operation using [`InsertOptions`](/docs/types#insertoptions).
+
+---
 
 ## Basic Usage
 
@@ -59,6 +65,8 @@ else
     print("Inserted player ID:", result[1].id)
 end
 ```
+
+---
 
 ## Complete Examples
 
@@ -189,6 +197,8 @@ if err then
 end
 ```
 
+---
+
 ## Method Chaining Order
 
 ### Correct Order
@@ -214,6 +224,8 @@ local result = client
     :csv()                 -- Request CSV format
     :execute()
 ```
+
+---
 
 ## Error Handling
 

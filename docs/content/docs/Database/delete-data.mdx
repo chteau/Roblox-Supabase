@@ -12,6 +12,8 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 The `delete()` method removes rows from a PostgreSQL table. This method returns an object that allows you to filter which rows to delete and specify what data to return from the deleted rows. **Use with caution as deleted data cannot be recovered.**
 
+---
+
 ## Method Signature
 
 <TypeTable
@@ -32,9 +34,13 @@ The `delete()` method removes rows from a PostgreSQL table. This method returns 
     }}
 />
 
+---
+
 ## Delete Options
 
 You can configure the delete operation using [`DeleteOptions`](/docs/types#deleteoptions)
+
+---
 
 ## Basic Usage
 
@@ -52,6 +58,8 @@ else
     print("Deleted", #result, "row(s)")
 end
 ```
+
+---
 
 ## Complete Examples
 
@@ -173,6 +181,8 @@ else
 end
 ```
 
+---
+
 ## Method Chaining Order
 
 ### Correct Order
@@ -282,6 +292,8 @@ local function archiveAndDelete(playerId)
     return false
 end
 ```
+
+---
 
 ## Error Handling
 
