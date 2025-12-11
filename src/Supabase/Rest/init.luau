@@ -22,13 +22,12 @@ export type LimitOptions = Types.LimitOptions
 export type RangeOptions = Types.RangeOptions
 export type ExplainOptions = Types.ExplainOptions
 export type RootQuery = Types.RootQuery
-export type SelectQuery = Types.SelectQuery
 export type InsertQuery = Types.InsertQuery
 export type UpdateQuery = Types.UpdateQuery
 export type DeleteQuery = Types.DeleteQuery
 export type UpsertQuery = Types.UpsertQuery
 export type RestClient = Types.RestClient
-export type RPCQuery = Types.RPCQuery
+export type RPCFilterStage = Types.RPCFilterStage
 
 --[[
 	Creates a new Supabase REST client.
@@ -50,7 +49,7 @@ function Rest.new(baseUrl: string, key: string): RestClient
     self._typesModule = Utils.tryLoadTypes(script)
 
     -- RPC method to call Postgres functions directly
-    function self:rpc(functionName: string, params: table?): RPCQuery
+    function self:rpc(functionName: string, params: table?): RPCFilterStage
         return RPCBuilder.new(self.baseUrl, self.key, functionName, params, self.typesModule)
     end
 

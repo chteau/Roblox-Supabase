@@ -14,7 +14,7 @@ local QueryModifiers = require(script.Parent.QueryModifiers)
 
 -- Re-export types
 local Types = require(script.Parent.Types)
-export type RPCQuery = Types.RPCQuery
+export type RPCFilterStage = Types.RPCFilterStage
 
 -- Wrap filter methods to check if modifiers have already been used
 local function createFilterWrapper(originalMethod)
@@ -234,7 +234,7 @@ end
 	@param functionName string -- Function name to call
 	@param params table? -- Optional parameters to pass to the function
 	@param typesModule table? -- Optional types module for validation
-	@return RPCQuery -- A new RPC builder instance
+	@return RPCFilterStage -- A new RPC builder instance
 ]]
 function RPCBuilder.new(baseUrl, key, functionName, params, typesModule)
     local RPCQuery = {}
