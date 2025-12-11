@@ -11,6 +11,7 @@
         "Database/fetch-data",
         "Database/insert-data",
         "Database/update-data",
+        "Database/upsert-data",
         "Database/delete-data",
 
         "---Types---",
