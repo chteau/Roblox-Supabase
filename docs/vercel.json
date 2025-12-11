@@ -1,0 +1,6 @@
+{
+    "rewrites": [
+        { "source": "/docs", "destination": "https://roblox-supabase.vercel.app/" },
+        { "source": "/docs/:path*", "destination": "hhttps://roblox-supabase.vercel.app/:path*" }
+    ]
+}
