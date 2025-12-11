@@ -18,3 +18,7 @@
         Read the docs
     </a>
 </div>
+
+# Disclaimer
+
+This project still has a lot of work to be done. Do not use it for production uses just yet.
