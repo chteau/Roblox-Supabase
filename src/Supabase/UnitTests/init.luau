@@ -11,6 +11,8 @@
 local UnitTests = {}
 UnitTests.__index = UnitTests
 
+local RestTypesTest = require(script:FindFirstChild("RestTypesTest"))
+
 export type UnitTests = {
     client: any, -- SupabaseClient
 
@@ -26,6 +28,7 @@ export type UnitTests = {
 ]]
 function UnitTests.new(client: any)
     local self = setmetatable({}, UnitTests)
+
     self.client = client
     return self
 end
@@ -815,6 +818,24 @@ function UnitTests:runMutationTests()
     assert(UpsertData[1].age == 101, "SUPABASE> Upsert test failed: age was not updated correctly.")
     assert(UpsertError == nil, "SUPABASE> Error in Upsert test: " .. tostring(UpsertError))
 
+    -- Upsert with onConflict Test
+    local UpsertConflictData, UpsertConflictError = self.client
+        :from("unittests")
+        :upsert({
+            name = "Unit Test User Upserted Conflict",
+            email = testEmail, -- This email already exists
+            age = 102,
+            external_id = testExternalId,
+            status = "active"
+        }, {
+            onConflict = "email"
+        })
+        :single()
+        :execute()
+
+    assert(UpsertConflictData ~= nil and (#UpsertConflictData > 0 or type(UpsertConflictData) == "table"), "SUPABASE> Upsert test returned no data.")
+    assert(UpsertConflictError == nil, "SUPABASE> Error in Upsert test: ".. tostring(UpsertConflictError))
+
     -- Delete Test
     local DeleteData, DeleteError = self.client
         :from("unittests")
@@ -1051,6 +1072,10 @@ function UnitTests:runAllTests()
     -- RPC Tests
     print("\nSUPABASE> --- RPC TESTS ---")
     self:runRPCTests()
+
+    -- Type tests
+    print("\nSUPABASE> --- TYPE TESTS ---")
+    RestTypesTest.run()
 
     print("\nSUPABASE> ===========================================")
     print("SUPABASE> All tests completed successfully!")
