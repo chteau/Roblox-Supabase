@@ -29,7 +29,7 @@ Supabase.__index = Supabase
 -- Import types from Rest module for type safety and autocomplete
 local RestTypes = require(script.Rest.Types)
 export type RootQuery = RestTypes.RootQuery
-export type RPCQuery = RestTypes.RPCQuery
+export type RPCFilterStage = RestTypes.RPCFilterStage
 
 --[[
 	Supabase client type definition.
@@ -42,7 +42,7 @@ export type RPCQuery = RestTypes.RPCQuery
 	@property _unitTests UnitTests.UnitTests -- Internal unit testing module
 
 	@method from (tableName: string) -> RootQuery -- Creates a query builder for the specified table
-	@method rpc (functionName: string, params: {[string]: any}?) -> RPCQuery -- Calls a PostgreSQL function
+	@method rpc (functionName: string, params: {[string]: any}?) -> RPCFilterStage -- Calls a PostgreSQL function
 ]]
 export type SupabaseClient = {
 	rest: Rest.RestClient,
@@ -51,7 +51,7 @@ export type SupabaseClient = {
 	_unitTests: UnitTests.UnitTests,
 
 	from: (self: SupabaseClient, tableName: string) -> RootQuery,
-	rpc: (self: SupabaseClient, functionName: string, params: {[string]: any}?) -> RPCQuery,
+	rpc: (self: SupabaseClient, functionName: string, params: {[string]: any}?) -> RPCFilterStage,
 }
 
 --[[
