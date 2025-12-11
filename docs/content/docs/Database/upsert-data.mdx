@@ -1,0 +1,284 @@
+---
+title: Upsert Data
+description: Insert or update rows in your PostgreSQL database using the Supabase client.
+icon: TrendingUpDown
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# `upsert(data: {[string]: any} | {[string]: any}[], options: InsertOptions?)`
+
+<Callout title="`upsert()` can be combined with select(), returns(), single(), maybeSingle(), and csv() modifiers." type="info" />
+
+The `upsert()` method performs an "insert or update" operation on a PostgreSQL table. This is also known as a "merge" operation. It returns an object that allows you to specify what data to return from the upserted rows.
+
+## Method Signature
+
+<TypeTable
+    type={{
+        upsert: {
+            description: "Performs an upsert (insert or update) operation on the table.",
+            type: 'function(data: {[string]: any} | {[string]: any}[], options: InsertOptions?)',
+            parameters: [
+                {
+                    name: "data",
+                    type: "{[string]: any} | {[string]: any}[]",
+                    description: "Object or array of objects containing column-value pairs to upsert. Must include primary key or unique constraint columns.",
+                    required: true
+                },
+                {
+                    name: "options",
+                    type: "InsertOptions?",
+                    description: "Optional configuration for the upsert operation, including onConflict behavior.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+## Upsert Options
+
+You can configure the upsert operation using [`InsertOptions`](/docs/types#insertoptions) with upsert-specific settings:
+
+## Basic Usage
+
+```lua
+-- Upsert a single row by unique constraint
+local result, err = client
+    :from("players")
+    :upsert(
+        {
+            username = "Player123",
+            level = 5,
+            experience = 1000,
+            last_login = os.date("!%Y-%m-%d %H:%M:%S")
+        },
+        {
+            onConflict = "username" -- Conflict on username unique constraint
+        }
+    )
+    :execute()
+
+if err then
+    warn("Upsert failed:", err)
+else
+    if result[1].created_at == result[1].updated_at then
+        print("New player inserted")
+    else
+        print("Existing player updated")
+    end
+end
+```
+
+## Complete Examples
+
+### Example 1: Basic Upsert with Primary Key
+
+```lua
+-- Upsert by primary key (id)
+local result, err = client
+    :from("players")
+    :upsert(
+        {
+            id = 123,  -- Primary key
+            username = "UpdatedPlayer",
+            level = 10,
+            experience = 5000,
+            last_login = os.date("!%Y-%m-%d %H:%M:%S")
+        },
+        {
+            onConflict = "id"
+        }
+    )
+    :select("*")
+    :single()
+    :execute()
+
+if err then
+    warn("Upsert failed:", err)
+else
+    print("Player upserted with ID:", result.id)
+end
+```
+
+### Example 2: Upsert Multiple Rows
+
+```lua
+-- Upsert multiple players at once
+local players = {
+    {
+        username = "Warrior",
+        level = 10,
+        class = "warrior",
+    },
+    {
+        username = "Mage",
+        level = 8,
+        class = "mage",
+    },
+    {
+        username = "Rogue",
+        level = 12,
+        class = "rogue",
+    }
+}
+
+local result, err = client
+    :from("players")
+    :upsert(players, { onConflict = "username" })
+    :select("username, level, class")
+    :execute()
+
+if err then
+    warn("Batch upsert failed:", err)
+else
+    for _, player in ipairs(result) do
+        print(string.format("%s (Level %d %s) upserted",
+            player.username, player.level, player.class))
+    end
+end
+```
+
+### Example 3: Upsert with Type Validation
+
+```lua
+-- Define types for validation
+type PlayerUpsert = {
+    id: number?,
+    username: string,
+    level: number,
+    experience: number,
+    updated_at: string
+}
+
+-- Upsert with type validation
+local playerData: PlayerUpsert = {
+    username = "TypeSafePlayer",
+    level = 15,
+    experience = 7500,
+    updated_at = os.date("!%Y-%m-%d %H:%M:%S")
+}
+
+local result, err = client
+    :from("players")
+    :upsert(playerData, { onConflict = "username" })
+    :executeTyped()
+
+if err then
+    warn("Type validation failed:", err)
+end
+```
+
+### Example 4: Upsert with JSON Data
+
+```lua
+-- Upsert JSON/JSONB column
+local result, err = client
+    :from("player_settings")
+    :upsert(
+        {
+            id = 123,
+            settings = {
+                theme = "dark",
+                notifications = {
+                    email = true,
+                    push = false,
+                    in_game = true
+                },
+                preferences = {
+                    language = "en",
+                    timezone = "UTC"
+                }
+            },
+            last_login = os.date("!%Y-%m-%d %H:%M:%S")
+        },
+        {
+            onConflict = "id"
+        }
+    )
+    :execute()
+```
+
+## Method Chaining Order
+
+### Correct Order
+```lua
+-- Start with from(), then upsert(), then modifiers
+local result = client
+    :from("players")                    -- Step 1: Select table
+    :upsert(
+        {                               -- Step 2: Upsert data
+            username = "TestPlayer",
+            level = 1
+        },
+        {
+            onConflict = "username",    -- Step 3: Specify conflict columns (optional but recommended)
+        }
+    )
+    :select("*")                        -- Step 4: Specify return columns (optional)
+    :single()                           -- Step 5: Expect single row (optional)
+    :execute()                          -- Step 6: Execute
+```
+
+### Important: onConflict option is Recommended
+
+The onConflict option allows you to upsert data using a non-primary unique constraint. You can set these up directly in your database using Supabase's dashboard.
+
+```lua
+-- Without onConflict(), upsert uses the primary key by default.
+local result = client
+    :from("players")
+    :upsert({id = 123, username = "Player"})  -- Assumes conflict on primary key (id)
+    :execute()
+
+-- With onConflict for non-primary unique constraint
+local resultWithConflict = client
+    :from("players")
+    :upsert(
+        {
+            username = "Player",
+            level = 10
+        },
+        {
+            onConflict = "username"
+        }
+    )
+    :execute()
+```
+
+## Error Handling
+
+### Common Upsert Errors
+
+```lua
+-- Missing unique constraint information
+local result, err = client
+    :from("players")
+    :upsert({
+        username = "Player123",
+        level = 1
+    })
+    -- Forgot onConflict - assumes primary key conflict but no primary key in data
+    :execute()
+
+if err then
+    warn("Upsert err:", err)  -- May fail if no conflict resolution specified
+end
+
+-- Multiple unique constraint violations
+local result, err = client
+    :from("users")
+    :upsert(
+        {
+            email = "user@example.com",  -- Unique constraint
+            username = "user123"         -- Another unique constraint
+        },
+        {
+            onConflict = "email"
+        }
+    )
+    :execute()
+
+-- Could still fail on username conflict if email is different but username exists
+```

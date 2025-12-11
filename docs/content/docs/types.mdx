@@ -118,26 +118,84 @@ The entry point for all database operations after selecting a table with `from()
     }}
 />
 
-### Query Stages Overview
+## Query Stage System
 
-The new type system uses a stage-based approach where you can chain filters first, then transition to modifiers. Once you use a modifier, you cannot go back to filters in that chain.
+The type system uses a sophisticated stage-based approach with finalizer collapsing. Understanding these stages is key to using the API effectively:
 
-### `SelectFilterStage` → `SelectModifierStage`
+### Stage Flow Overview
 
-A query builder for SELECT operations that supports filtering first, then modifiers.
+1. **Filter Stage**: Initial stage for SELECT, UPDATE, DELETE, and RPC queries where filter methods are chainable
+2. **Modifier Stage**: For SELECT/RPC after using non-final modifiers (`order`, `limit`, `range`)
+3. **Mutation Stages**: Special stages for INSERT, UPDATE, DELETE operations
+4. **Final Stage**: Collapsed stage with only execution methods after using finalizers
+
+### Key Concepts
+
+- **Chainable Methods**: Return the same stage type for further chaining
+- **Transitioning Methods**: Move to a different stage type
+- **Finalizers**: Collapse the chain to `FinalStage` with only `execute()`/`executeTyped()`
+- **Non-Final Modifiers**: Remain in modifier stage for further chaining
+
+## SELECT Query Types
+
+### `SelectFilterStage`
+
+The initial stage for SELECT queries. Filter methods are chainable, while modifiers transition to `SelectModifierStage` or collapse to `FinalStage`.
 
 <TypeTable
     type={{
         FilterMethods: {
-            description: "All filter methods (eq, neq, gt, etc.) return SelectFilterStage for chaining",
-            type: "function(column: string, value: any) -> SelectFilterStage"
+            description: "All filter methods (eq, neq, gt, etc.) return SelectFilterStage for unlimited chaining",
+            type: "FilterStage<SelectFilterStage>",
+            note: "Includes eq, neq, gt, gte, lt, lte, like, ilike, is, in_, contains, containedBy, rangeGt, rangeGte, rangeLt, rangeLte, rangeAdjacent, overlaps, match, not_, filter, or_"
         },
-        TransitioningModifiers: {
-            description: "Modifier methods (order, limit, single, etc.) transition to SelectModifierStage",
-            type: "function(...) -> SelectModifierStage"
+        order: {
+            description: "Sort results by column(s). Transitions to SelectModifierStage.",
+            type: "function(column: string, options: OrderOptions?) -> SelectModifierStage",
+            returns: "SelectModifierStage"
+        },
+        limit: {
+            description: "Limit number of rows returned. Transitions to SelectModifierStage.",
+            type: "function(count: number, options: LimitOptions?) -> SelectModifierStage",
+            returns: "SelectModifierStage"
+        },
+        range: {
+            description: "Get specific range of rows for pagination. Transitions to SelectModifierStage.",
+            type: "function(from: number, to: number, options: RangeOptions?) -> SelectModifierStage",
+            returns: "SelectModifierStage"
+        },
+        single: {
+            description: "Expect exactly one row. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        maybeSingle: {
+            description: "Return one row or nil if none. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        csv: {
+            description: "Request CSV format response. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        returns: {
+            description: "Specify return representation preference. Finalizer that collapses to FinalStage.",
+            type: 'function(representation: "minimal" | "representation") -> FinalStage',
+            returns: "FinalStage"
+        },
+        overrideTypes: {
+            description: "Override runtime type validation schema. Finalizer that collapses to FinalStage.",
+            type: "function(schema: table) -> FinalStage",
+            returns: "FinalStage"
+        },
+        explain: {
+            description: "Get query execution plan. Finalizer that collapses to FinalStage.",
+            type: "function(options: ExplainOptions?) -> FinalStage",
+            returns: "FinalStage"
         },
         BaseExec: {
-            description: "Inherits execution methods",
+            description: "Inherits execution methods for immediate execution",
             type: "BaseExec"
         }
     }}
@@ -145,54 +203,54 @@ A query builder for SELECT operations that supports filtering first, then modifi
 
 ### `SelectModifierStage`
 
-The stage after applying a modifier in a SELECT query. Contains only modifier methods and execution.
+The stage after applying non-final modifiers (`order`, `limit`, `range`) in a SELECT query.
 
 <TypeTable
     type={{
         order: {
-            description: "Sort results by column(s).",
+            description: "Sort results by column(s). Chainable within modifier stage.",
             type: "function(column: string, options: OrderOptions?) -> SelectModifierStage",
             returns: "SelectModifierStage"
         },
         limit: {
-            description: "Limit number of rows returned.",
+            description: "Limit number of rows returned. Chainable within modifier stage.",
             type: "function(count: number, options: LimitOptions?) -> SelectModifierStage",
             returns: "SelectModifierStage"
         },
         range: {
-            description: "Get specific range of rows for pagination.",
+            description: "Get specific range of rows. Chainable within modifier stage.",
             type: "function(from: number, to: number, options: RangeOptions?) -> SelectModifierStage",
             returns: "SelectModifierStage"
         },
         single: {
-            description: "Expect and return exactly one row. Throws error if zero or multiple rows.",
-            type: "function() -> SelectModifierStage",
-            returns: "SelectModifierStage"
+            description: "Expect exactly one row. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
         },
         maybeSingle: {
-            description: "Return one row or nil if no rows match.",
-            type: "function() -> SelectModifierStage",
-            returns: "SelectModifierStage"
+            description: "Return one row or nil if none. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
         },
         csv: {
-            description: "Request CSV format response instead of JSON.",
-            type: "function() -> SelectModifierStage",
-            returns: "SelectModifierStage"
+            description: "Request CSV format response. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
         },
         returns: {
-            description: "Specify return representation preference.",
-            type: 'function(representation: "minimal" | "representation") -> SelectModifierStage',
-            returns: "SelectModifierStage"
+            description: "Specify return representation. Finalizer that collapses to FinalStage.",
+            type: 'function(representation: "minimal" | "representation") -> FinalStage',
+            returns: "FinalStage"
         },
         overrideTypes: {
-            description: "Override runtime type validation schema.",
-            type: "function(schema: table) -> SelectModifierStage",
-            returns: "SelectModifierStage"
+            description: "Override type validation schema. Finalizer that collapses to FinalStage.",
+            type: "function(schema: table) -> FinalStage",
+            returns: "FinalStage"
         },
         explain: {
-            description: "Get query execution plan instead of results.",
-            type: "function(options: ExplainOptions?) -> SelectModifierStage",
-            returns: "SelectModifierStage"
+            description: "Get query execution plan. Finalizer that collapses to FinalStage.",
+            type: "function(options: ExplainOptions?) -> FinalStage",
+            returns: "FinalStage"
         },
         BaseExec: {
             description: "Inherits execution methods",
@@ -200,143 +258,260 @@ The stage after applying a modifier in a SELECT query. Contains only modifier me
         }
     }}
 />
+
+## Mutation Query Types (INSERT/UPSERT)
 
 ### `InsertQuery` / `UpsertQuery`
 
-Query builders for INSERT and UPSERT operations with only modifier support (no filters).
+Initial stage for INSERT and UPSERT operations. These start in `MutationInitialStage` with no filter support.
 
 <TypeTable
     type={{
         select: {
-            description: "Specifies which columns to return from the inserted/upserted rows.",
-            type: "function(columns: string) -> InsertQuery",
-            returns: "InsertQuery"
+            description: "Specifies which columns to return. Transitions to MutationSelectStage.",
+            type: "function(columns: string) -> MutationSelectStage",
+            returns: "MutationSelectStage"
         },
         returns: {
-            description: "Specifies the return representation preference.",
-            type: "function(representation: 'minimal' | 'representation') -> InsertQuery",
-            returns: "InsertQuery"
-        },
-        single: {
-            description: "Expects and returns exactly one row.",
-            type: "function() -> InsertQuery",
-            returns: "InsertQuery"
-        },
-        maybeSingle: {
-            description: "Returns one row or nil if none.",
-            type: "function() -> InsertQuery",
-            returns: "InsertQuery"
+            description: "Specifies return representation preference. Finalizer that collapses to FinalStage.",
+            type: 'function(representation: "minimal" | "representation") -> FinalStage',
+            returns: "FinalStage"
         },
         csv: {
-            description: "Requests CSV format response.",
-            type: "function() -> InsertQuery",
-            returns: "InsertQuery"
+            description: "Requests CSV format response. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
         },
         BaseExec: {
-            description: "Inherits execution methods",
+            description: "Inherits execution methods for immediate execution",
             type: "BaseExec"
         }
     }}
 />
 
-### `UpdateFilterStage` → `UpdateModifierStage`
+## Mutation Query Types (UPDATE/DELETE)
 
-A query builder for UPDATE operations with filter support first, then mutation modifiers.
+### `UpdateFilterStage`
+
+Initial stage for UPDATE operations with filter support.
 
 <TypeTable
     type={{
         FilterMethods: {
-            description: "All filter methods (eq, neq, gt, etc.) return UpdateFilterStage for chaining",
-            type: "function(column: string, value: any) -> UpdateFilterStage"
+            description: "All filter methods (eq, neq, gt, etc.) return UpdateFilterStage for unlimited chaining",
+            type: "FilterStage<UpdateFilterStage>",
+            note: "Includes all filter methods from FilterStage"
         },
-        TransitioningModifiers: {
-            description: "Mutation modifier methods (select, returns, single, etc.) transition to UpdateModifierStage",
-            type: "function(...) -> UpdateModifierStage"
-        },
-        BaseExec: {
-            description: "Inherits execution methods",
-            type: "BaseExec"
-        }
-    }}
-/>
-
-### `UpdateModifierStage`
-
-The stage after applying a mutation modifier in an UPDATE query.
-
-<TypeTable
-    type={{
         select: {
-            description: "Specifies which columns to return from the updated rows.",
-            type: "function(columns: string) -> UpdateModifierStage",
-            returns: "UpdateModifierStage"
+            description: "Specifies which columns to return. Transitions to MutationSelectStage.",
+            type: "function(columns: string) -> MutationSelectStage",
+            returns: "MutationSelectStage"
         },
         returns: {
-            description: "Specifies the return representation preference.",
-            type: "function(representation: 'minimal' | 'representation') -> UpdateModifierStage",
-            returns: "UpdateModifierStage"
-        },
-        single: {
-            description: "Expects and returns exactly one row.",
-            type: "function() -> UpdateModifierStage",
-            returns: "UpdateModifierStage"
-        },
-        maybeSingle: {
-            description: "Returns one row or nil if none.",
-            type: "function() -> UpdateModifierStage",
-            returns: "UpdateModifierStage"
+            description: "Specifies return representation preference. Finalizer that collapses to FinalStage.",
+            type: 'function(representation: "minimal" | "representation") -> FinalStage',
+            returns: "FinalStage"
         },
         csv: {
-            description: "Requests CSV format response.",
-            type: "function() -> UpdateModifierStage",
-            returns: "UpdateModifierStage"
+            description: "Requests CSV format response. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
         },
         BaseExec: {
-            description: "Inherits execution methods",
+            description: "Inherits execution methods for immediate execution",
             type: "BaseExec"
         }
     }}
 />
 
-### `DeleteFilterStage` → `DeleteModifierStage`
+### `DeleteFilterStage`
 
-A query builder for DELETE operations with filter support first, then mutation modifiers.
+Initial stage for DELETE operations with filter support.
 
 <TypeTable
     type={{
         FilterMethods: {
-            description: "All filter methods (eq, neq, gt, etc.) return DeleteFilterStage for chaining",
-            type: "function(column: string, value: any) -> DeleteFilterStage"
+            description: "All filter methods (eq, neq, gt, etc.) return DeleteFilterStage for unlimited chaining",
+            type: "FilterStage<DeleteFilterStage>",
+            note: "Includes all filter methods from FilterStage"
         },
-        TransitioningModifiers: {
-            description: "Mutation modifier methods (select, returns, single, etc.) transition to DeleteModifierStage",
-            type: "function(...) -> DeleteModifierStage"
+        select: {
+            description: "Specifies which columns to return. Transitions to MutationSelectStage.",
+            type: "function(columns: string) -> MutationSelectStage",
+            returns: "MutationSelectStage"
+        },
+        returns: {
+            description: "Specifies return representation preference. Finalizer that collapses to FinalStage.",
+            type: 'function(representation: "minimal" | "representation") -> FinalStage',
+            returns: "FinalStage"
+        },
+        csv: {
+            description: "Requests CSV format response. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
         },
         BaseExec: {
-            description: "Inherits execution methods",
+            description: "Inherits execution methods for immediate execution",
             type: "BaseExec"
         }
     }}
 />
 
-### `RPCFilterStage` → `RPCModifierStage`
+## RPC Query Types
 
-A query builder for calling PostgreSQL stored procedures with filter and modifier support.
+### `RPCFilterStage`
+
+Initial stage for calling PostgreSQL stored procedures with filter support.
 
 <TypeTable
     type={{
         FilterMethods: {
-            description: "All filter methods (eq, neq, gt, etc.) return RPCFilterStage for chaining",
-            type: "function(column: string, value: any) -> RPCFilterStage"
+            description: "All filter methods (eq, neq, gt, etc.) return RPCFilterStage for unlimited chaining",
+            type: "FilterStage<RPCFilterStage>",
+            note: "Includes all filter methods from FilterStage"
         },
-        TransitioningModifiers: {
-            description: "Modifier methods (order, limit, single, etc.) transition to RPCModifierStage",
-            type: "function(...) -> RPCModifierStage"
+        order: {
+            description: "Sort results by column(s). Transitions to RPCModifierStage.",
+            type: "function(column: string, options: OrderOptions?) -> RPCModifierStage",
+            returns: "RPCModifierStage"
+        },
+        limit: {
+            description: "Limit number of rows returned. Transitions to RPCModifierStage.",
+            type: "function(count: number, options: LimitOptions?) -> RPCModifierStage",
+            returns: "RPCModifierStage"
+        },
+        range: {
+            description: "Get specific range of rows. Transitions to RPCModifierStage.",
+            type: "function(from: number, to: number, options: RangeOptions?) -> RPCModifierStage",
+            returns: "RPCModifierStage"
+        },
+        single: {
+            description: "Expect exactly one row. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        maybeSingle: {
+            description: "Return one row or nil if none. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        csv: {
+            description: "Request CSV format response. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        returns: {
+            description: "Specify return representation. Finalizer that collapses to FinalStage.",
+            type: 'function(representation: "minimal" | "representation") -> FinalStage',
+            returns: "FinalStage"
+        },
+        overrideTypes: {
+            description: "Override type validation schema. Finalizer that collapses to FinalStage.",
+            type: "function(schema: table) -> FinalStage",
+            returns: "FinalStage"
+        },
+        explain: {
+            description: "Get query execution plan. Finalizer that collapses to FinalStage.",
+            type: "function(options: ExplainOptions?) -> FinalStage",
+            returns: "FinalStage"
         },
         get: {
-            description: "Uses GET method instead of POST for the RPC call. Useful for immutable functions.",
+            description: "Uses GET method instead of POST for immutable functions. Chainable in filter stage.",
             type: "function() -> RPCFilterStage",
             returns: "RPCFilterStage"
+        },
+        BaseExec: {
+            description: "Inherits execution methods for immediate execution",
+            type: "BaseExec"
+        }
+    }}
+/>
+
+### `RPCModifierStage`
+
+The stage after applying non-final modifiers (`order`, `limit`, `range`) in an RPC query.
+
+<TypeTable
+    type={{
+        order: {
+            description: "Sort results by column(s). Chainable within modifier stage.",
+            type: "function(column: string, options: OrderOptions?) -> RPCModifierStage",
+            returns: "RPCModifierStage"
+        },
+        limit: {
+            description: "Limit number of rows returned. Chainable within modifier stage.",
+            type: "function(count: number, options: LimitOptions?) -> RPCModifierStage",
+            returns: "RPCModifierStage"
+        },
+        range: {
+            description: "Get specific range of rows. Chainable within modifier stage.",
+            type: "function(from: number, to: number, options: RangeOptions?) -> RPCModifierStage",
+            returns: "RPCModifierStage"
+        },
+        single: {
+            description: "Expect exactly one row. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        maybeSingle: {
+            description: "Return one row or nil if none. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        csv: {
+            description: "Request CSV format response. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        returns: {
+            description: "Specify return representation. Finalizer that collapses to FinalStage.",
+            type: 'function(representation: "minimal" | "representation") -> FinalStage',
+            returns: "FinalStage"
+        },
+        overrideTypes: {
+            description: "Override type validation schema. Finalizer that collapses to FinalStage.",
+            type: "function(schema: table) -> FinalStage",
+            returns: "FinalStage"
+        },
+        explain: {
+            description: "Get query execution plan. Finalizer that collapses to FinalStage.",
+            type: "function(options: ExplainOptions?) -> FinalStage",
+            returns: "FinalStage"
+        },
+        BaseExec: {
+            description: "Inherits execution methods",
+            type: "BaseExec"
+        }
+    }}
+/>
+
+## Mutation Select Stage
+
+### `MutationSelectStage`
+
+The stage after calling `.select()` on a mutation query (INSERT, UPDATE, DELETE, UPSERT). This stage exposes `single` and `maybeSingle` which are not available in `MutationInitialStage`.
+
+<TypeTable
+    type={{
+        single: {
+            description: "Expect exactly one row. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        maybeSingle: {
+            description: "Return one row or nil if none. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
+        },
+        returns: {
+            description: "Specify return representation. Finalizer that collapses to FinalStage.",
+            type: 'function(representation: "minimal" | "representation") -> FinalStage',
+            returns: "FinalStage"
+        },
+        csv: {
+            description: "Request CSV format response. Finalizer that collapses to FinalStage.",
+            type: "function() -> FinalStage",
+            returns: "FinalStage"
         },
         BaseExec: {
             description: "Inherits execution methods",
@@ -349,7 +524,40 @@ A query builder for calling PostgreSQL stored procedures with filter and modifie
 
 ### `BaseExec`
 
-Base interface containing execution methods common to all query types.
+Base interface containing execution methods common to all query stages.
+
+<TypeTable
+    type={{
+        execute: {
+            description: "Execute the query and return results or error.",
+            type: "function() -> (any, string?)",
+            returns: "(any, string?)",
+            note: "Available in all stages for immediate execution"
+        },
+        executeTyped: {
+            description: "Execute with runtime type validation.",
+            type: "function() -> (any, string?)",
+            returns: "(any, string?)",
+            note: "Available in all stages for immediate execution"
+        }
+    }}
+/>
+
+### `FilterStage<Next>`
+
+Generic filter stage type used internally. All filter methods return the `Next` type parameter, enabling type-safe chaining.
+
+### `ModifierStage`
+
+Modifier stage for SELECT/RPC queries with non-final modifiers (`order`, `limit`, `range`) that remain chainable, and finalizers that collapse to `FinalStage`.
+
+### `MutationInitialStage`
+
+Initial stage for mutation queries (INSERT/UPSERT) before calling `.select()`. Exposes `returns` and `csv` as finalizers, and `.select()` to transition to `MutationSelectStage`.
+
+### `FinalStage`
+
+Final collapsed stage with only execution methods. Reached after calling any finalizer method (`single`, `maybeSingle`, `csv`, `returns`, `overrideTypes`, `explain`).
 
 <TypeTable
     type={{
@@ -365,18 +573,6 @@ Base interface containing execution methods common to all query types.
         }
     }}
 />
-
-### `FilterStage<Next>`
-
-Generic filter stage type used internally. All filter methods return the `Next` type parameter.
-
-### `ModifierFinal`
-
-Full modifier stage used by SELECT and RPC queries after transitioning from filter stage.
-
-### `MutationModifierFinal`
-
-Mutation modifier stage used by INSERT, UPDATE, DELETE, and UPSERT queries after transitioning.
 
 ## Configuration Types
 
@@ -609,60 +805,103 @@ The main client type returned by `Supabase.createClient()`. Provides access to a
 
 ```mermaid
 graph TD
-    A[RootQuery] --> B[select]
-    A --> C[insert/upsert]
-    A --> D[update]
-    A --> E[delete]
-    A --> F[rpc]
+    A[RootQuery] --> B["select(columns)"]
+    A --> C["insert(data, options)"]
+    A --> D["update(data, options)"]
+    A --> E["delete(options)"]
+    A --> F["upsert(data, options)"]
+    A --> G["rpc(fnName, params)"]
 
-    B --> G[SelectFilterStage]
-    C --> H[InsertQuery/UpsertQuery]
-    D --> I[UpdateFilterStage]
-    E --> J[DeleteFilterStage]
-    F --> K[RPCFilterStage]
+    B --> H[SelectFilterStage]
+    C --> I[InsertQuery]
+    D --> J[UpdateFilterStage]
+    E --> K[DeleteFilterStage]
+    F --> L[UpsertQuery]
+    G --> M[RPCFilterStage]
 
-    G -->|filters| G
-    G -->|modifiers| L[SelectModifierStage]
+    subgraph "Filter Stage"
+        H -->|"filters (eq, gt, etc.)"| H
+        J -->|"filters (eq, gt, etc.)"| J
+        K -->|"filters (eq, gt, etc.)"| K
+        M -->|"filters (eq, gt, etc.)"| M
+        M -->|"get()"| M
+    end
 
-    I -->|filters| I
-    I -->|modifiers| M[UpdateModifierStage]
+    subgraph "Modifier Stage"
+        H -->|"order()/limit()/range()"| N[SelectModifierStage]
+        M -->|"order()/limit()/range()"| O[RPCModifierStage]
 
-    J -->|filters| J
-    J -->|modifiers| N[DeleteModifierStage]
+        N -->|"order()/limit()/range()"| N
+        O -->|"order()/limit()/range()"| O
+    end
 
-    K -->|filters| K
-    K -->|modifiers| O[RPCModifierStage]
+    subgraph "Mutation Initial Stage"
+        I -->|"select(columns)"| P[MutationSelectStage]
+        L -->|"select(columns)"| P
 
-    L -->|modifiers| L
-    M -->|modifiers| M
-    N -->|modifiers| N
-    O -->|modifiers| O
+        I -->|"returns()/csv()"| Q[FinalStage]
+        L -->|"returns()/csv()"| Q
+    end
 
-    style A fill:#11181c
-    style G fill:#34b27b
-    style I fill:#34b27b
-    style J fill:#34b27b
-    style K fill:#34b27b
-    style L fill:#0066cc
-    style M fill:#0066cc
-    style N fill:#0066cc
-    style O fill:#0066cc
+    subgraph "Mutation Filter Stage"
+        J -->|"select(columns)"| P
+        K -->|"select(columns)"| P
+
+        J -->|"returns()/csv()"| Q
+        K -->|"returns()/csv()"| Q
+    end
+
+    subgraph "Mutation Select Stage"
+        P -->|"single()/maybeSingle()<br>returns()/csv()"| Q
+    end
+
+    subgraph "Finalizers (All Stages)"
+        H -->|"single()/maybeSingle()<br>csv()/returns()<br>overrideTypes()/explain()"| Q
+        N -->|"single()/maybeSingle()<br>csv()/returns()<br>overrideTypes()/explain()"| Q
+        M -->|"single()/maybeSingle()<br>csv()/returns()<br>overrideTypes()/explain()"| Q
+        O -->|"single()/maybeSingle()<br>csv()/returns()<br>overrideTypes()/explain()"| Q
+    end
+
+    subgraph "Final Stage"
+        Q -->|"execute()"| R[(Results)]
+        Q -->|"executeTyped()"| S[Typed Results]
+    end
+
+    style A fill:#11181c,color:#fff
+    style H fill:#34b27b,color:#000
+    style J fill:#34b27b,color:#000
+    style K fill:#34b27b,color:#000
+    style M fill:#34b27b,color:#000
+    style N fill:#0066cc,color:#fff
+    style O fill:#0066cc,color:#fff
+    style I fill:#8a2be2,color:#fff
+    style L fill:#8a2be2,color:#fff
+    style P fill:#ff6b6b,color:#000
+    style Q fill:#f0ad4e,color:#000
 ```
 
-### Method Availability by Query Stage
-|Method Type|Filter Stage|Modifier Stage|Mutation Modifier Stage|
-|--|--|--|--|
-|**Filter Methods** (eq, neq, gt, etc.)|✅ Chainable (returns same stage)|❌ Not available|❌ Not available|
-|**Transitioning Modifiers** (order, limit, single, etc.)|✅ Available (transitions to ModifierStage)|✅ Chainable (returns ModifierStage)|Varies by query type|
-|**Mutation Modifiers** (select, returns, single, etc.)|✅ For UPDATE/DELETE (transitions to MutationModifierStage)|❌ Not applicable|✅ Chainable (returns MutationModifierStage)|
-|**Execution Methods** (execute, executeTyped)|✅ Available|✅ Available|✅ Available|
+### Method Availability Matrix
 
-## Query Type to Stage Mapping
+| Method Type | Filter Stage | Modifier Stage | Mutation Initial | Mutation Select | Final Stage |
+|-------------|--------------|----------------|------------------|-----------------|-------------|
+| **Filter Methods**<br />(eq, neq, gt, etc.) | ✅ Chainable | ❌ Not available | ❌ Not available | ❌ Not available | ❌ Not available |
+| **Non-Final Modifiers**<br />(order, limit, range) | ✅ Transitioning | ✅ Chainable | ❌ Not available | ❌ Not available | ❌ Not available |
+| **Finalizers**<br />(single, maybeSingle) | ✅ Collapses | ✅ Collapses | ❌ Not available* | ✅ Collapses | ❌ Not available |
+| **Finalizers**<br />(csv, returns) | ✅ Collapses | ✅ Collapses | ✅ Collapses | ✅ Collapses | ❌ Not available |
+| **Finalizers**<br />(overrideTypes, explain) | ✅ Collapses | ✅ Collapses | ❌ Not available | ❌ Not available | ❌ Not available |
+| **select()** | ✅ (Mutation only) | ❌ Not available | ✅ Transitioning | ❌ Not available | ❌ Not available |
+| **get()** | ✅ (RPC only) | ❌ Not available | ❌ Not available | ❌ Not available | ❌ Not available |
+| **execute()**<br />**executeTyped()** | ✅ Available | ✅ Available | ✅ Available | ✅ Available | ✅ Only these |
 
-|Query Type|Initial Stage|After First Modifier|
-|--|--|--|
-|`select()`|	`SelectFilterStage`|	`SelectModifierStage`|
-|`update()`|	`UpdateFilterStage`|	`UpdateModifierStage`|
-|`delete()`|	`DeleteFilterStage`|	`DeleteModifierStage`|
-|`rpc()`|	`RPCFilterStage`|	`RPCModifierStage`|
-|`insert()`/`upsert()`|	`InsertQuery`/`UpsertQuery` (no filter stage)|Same (MutationModifierFinal)|
+*Note: `single()` and `maybeSingle()` are only available in `MutationSelectStage`, not `MutationInitialStage`.*
+
+### Query Type to Stage Mapping
+
+| Query Type | Initial Stage | After `.select()` | After Modifier | After Finalizer |
+|------------|---------------|-------------------|----------------|-----------------|
+| `select()` | `SelectFilterStage` | N/A | `SelectModifierStage` | `FinalStage` |
+| `insert()` | `InsertQuery`<br />(MutationInitialStage) | `MutationSelectStage` | N/A | `FinalStage` |
+| `update()` | `UpdateFilterStage` | `MutationSelectStage` | N/A | `FinalStage` |
+| `delete()` | `DeleteFilterStage` | `MutationSelectStage` | N/A | `FinalStage` |
+| `upsert()` | `UpsertQuery`<br />(MutationInitialStage) | `MutationSelectStage` | N/A | `FinalStage` |
+| `rpc()` | `RPCFilterStage` | N/A | `RPCModifierStage` | `FinalStage` |
