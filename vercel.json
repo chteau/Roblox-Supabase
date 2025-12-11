@@ -6,7 +6,7 @@
         }
     ],
     "buildCommand": "pnpm build",
-    "outputDirectory": ".next",
+    "outputDirectory": "docs/.next",
     "devCommand": "pnpm dev",
     "installCommand": "pnpm install"
 }
