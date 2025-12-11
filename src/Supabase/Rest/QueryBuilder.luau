@@ -100,8 +100,16 @@ local function buildRequest(self)
                 -- Multiple columns for onConflict
                 onConflict = "(" .. onConflict .. ")"
             end
+
             table.insert(preferHeaders, "resolution=merge-duplicates")
-            headers["Prefer"] = (headers["Prefer"] or "") .. ", on-conflict=" .. onConflict
+            table.insert(preferHeaders, "on-conflict=" .. onConflict)
+
+            local sign = "?"
+            if self.query ~= "" or string.len(self.query) > 0 then
+                sign = "&"
+            end
+            self.query = self.query .. sign .. "on_conflict=" .. onConflict
+
         elseif self._insertOptions.ignoreDuplicates then
             table.insert(preferHeaders, "resolution=ignore-duplicates")
         elseif self._insertOptions.upsert then
@@ -142,6 +150,8 @@ local function buildRequest(self)
     if self.body and (self.method == "POST" or self.method == "PATCH") then
         request.Body = Http:JSONEncode(self.body)
     end
+
+    -- print(self, request)
 
     return request
 end
@@ -293,12 +303,17 @@ function QueryBuilder.new(baseUrl, key, tableName, typesModule)
             columns = "*"
         end
 
-        -- Check if select is not called after an insert / update
+        -- Check if select is not called after an insert / update / upsert
         if not (self.body and (self.method == "POST" or self.method == "PATCH")) then
             self.method = "GET"
             self.query = "?select=" .. Http:UrlEncode(columns)
         else
-            self.query = self.query .. "&select=" .. Http:UrlEncode(columns)
+            local sign = "?"
+            if self.query ~= "" or string.len(self.query) > 0 then
+                sign = "&"
+            end
+
+            self.query = self.query .. sign .. "select=" .. Http:UrlEncode(columns)
         end
 
         return self
