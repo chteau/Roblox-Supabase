@@ -1,0 +1,12 @@
+{
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/docs/$1"
+        }
+    ],
+    "buildCommand": "pnpm build",
+    "outputDirectory": ".next",
+    "devCommand": "pnpm dev",
+    "installCommand": "pnpm install"
+}
