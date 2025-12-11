@@ -12,6 +12,8 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 The `update()` method modifies existing rows in a PostgreSQL table. This method returns an object that allows you to filter which rows to update and specify what data to return from the updated rows.
 
+---
+
 ## Method Signature
 
 <TypeTable
@@ -38,9 +40,13 @@ The `update()` method modifies existing rows in a PostgreSQL table. This method 
     }}
 />
 
+---
+
 ## Update Options
 
 You can configure the update operation using [`UpdateOptions`](/docs/types#updateoptions).
+
+---
 
 ## Basic Usage
 
@@ -62,6 +68,8 @@ else
     print("Updated", #result, "row(s)")
 end
 ```
+
+---
 
 ## Complete Examples
 
@@ -181,6 +189,8 @@ if error then
 end
 ```
 
+---
+
 ## Method Chaining Order
 
 ### Correct Order
@@ -206,6 +216,8 @@ local safeResult = client
     :eq("id", 123)  -- Specific filter
     :execute()
 ```
+
+---
 
 ## Error Handling
 

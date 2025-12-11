@@ -14,6 +14,10 @@
         "Database/upsert-data",
         "Database/delete-data",
 
+        "---Filters And Modifiers---",
+        "FiltersAndModifiers/filters",
+        "FiltersAndModifiers/modifiers",
+
         "---Types---",
         "types"
     ]

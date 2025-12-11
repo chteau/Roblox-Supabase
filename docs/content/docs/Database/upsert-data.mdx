@@ -12,6 +12,8 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 The `upsert()` method performs an "insert or update" operation on a PostgreSQL table. This is also known as a "merge" operation. It returns an object that allows you to specify what data to return from the upserted rows.
 
+---
+
 ## Method Signature
 
 <TypeTable
@@ -36,6 +38,8 @@ The `upsert()` method performs an "insert or update" operation on a PostgreSQL t
         }
     }}
 />
+
+---
 
 ## Upsert Options
 
@@ -70,6 +74,8 @@ else
     end
 end
 ```
+
+---
 
 ## Complete Examples
 
@@ -200,6 +206,8 @@ local result, err = client
     :execute()
 ```
 
+---
+
 ## Method Chaining Order
 
 ### Correct Order
@@ -246,6 +254,8 @@ local resultWithConflict = client
     )
     :execute()
 ```
+
+---
 
 ## Error Handling
 

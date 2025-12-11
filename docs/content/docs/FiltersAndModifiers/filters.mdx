@@ -1,0 +1,998 @@
+---
+title: Filter Methods
+description: Learn how to use filter methods to refine your queries in the Roblox Supabase client.
+icon: Blend
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+<Callout title="Filter methods must be used BEFORE Modifier methods." type="warn" />
+
+Filter methods are available in the [`SelectFilterStage`](/docs/types#selectfilterstage), [`UpdateFilterStage`](/docs/types#updatefilterstage), [`DeleteFilterStage`](/docs/types#deletefilterstage), and [`RPCFilterStage`](/docs/types#rpcfilterstage). All filter methods are **chainable** within their respective filter stages and return the same stage type for unlimited method chaining.
+
+## Filter Method Types
+
+### `eq(column: string, value: any)`
+
+<TypeTable
+    type={{
+        eq: {
+            description: "Matches rows where the column equals the specified value.",
+            type: "function(column: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The value to match exactly.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `eq` method filters rows where the specified column's value is equal to the provided value.
+
+```lua
+-- Get players with level 10
+local players, error = client
+    :from("players")
+    :select("*")
+    :eq("level", 10)
+    :execute()
+```
+
+---
+
+### `neq(column: string, value: any)`
+
+<TypeTable
+    type={{
+        neq: {
+            description: "Matches rows where the column does NOT equal the specified value.",
+            type: "function(column: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The value to exclude.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `neq` method filters rows where the specified column's value is NOT equal to the provided value.
+
+```lua
+-- Get all players except those with level 1
+local players, error = client
+    :from("players")
+    :select("*")
+    :neq("level", 1)
+    :execute()
+```
+
+---
+
+### `gt(column: string, value: any)`
+
+<TypeTable
+    type={{
+        gt: {
+            description: "Matches rows where the column is greater than the specified value.",
+            type: "function(column: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The value to compare against.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `gt` method filters rows where the specified column's value is greater than the provided value.
+
+```lua
+-- Get players with level greater than 50
+local highLevelPlayers, error = client
+    :from("players")
+    :select("*")
+    :gt("level", 50)
+    :execute()
+```
+
+---
+
+### `gte(column: string, value: any)`
+
+<TypeTable
+    type={{
+        gte: {
+            description: "Matches rows where the column is greater than or equal to the specified value.",
+            type: "function(column: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The value to compare against.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `gte` method filters rows where the specified column's value is greater than or equal to the provided value.
+
+```lua
+-- Get players with level 50 or higher
+local highLevelPlayers, error = client
+    :from("players")
+    :select("*")
+    :gte("level", 50)
+    :execute()
+```
+
+---
+
+### `lt(column: string, value: any)`
+
+<TypeTable
+    type={{
+        lt: {
+            description: "Matches rows where the column is less than the specified value.",
+            type: "function(column: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The value to compare against.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `lt` method filters rows where the specified column's value is less than the provided value.
+
+```lua
+-- Get players with level less than 10
+local newPlayers, error = client
+    :from("players")
+    :select("*")
+    :lt("level", 10)
+    :execute()
+```
+
+---
+
+### `lte(column: string, value: any)`
+
+<TypeTable
+    type={{
+        lte: {
+            description: "Matches rows where the column is less than or equal to the specified value.",
+            type: "function(column: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The value to compare against.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `lte` method filters rows where the specified column's value is less than or equal to the provided value.
+
+```lua
+-- Get players with level 10 or lower
+local lowLevelPlayers, error = client
+    :from("players")
+    :select("*")
+    :lte("level", 10)
+    :execute()
+```
+
+---
+
+### `like(column: string, pattern: string)`
+
+<TypeTable
+    type={{
+        like: {
+            description: "Case-sensitive pattern matching using SQL LIKE operator.",
+            type: "function(column: string, pattern: string)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "pattern",
+                    type: "string",
+                    description: "The pattern to match. Use '%' as wildcard.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `like` method performs case-sensitive pattern matching using SQL's LIKE operator.
+
+```lua
+-- Find usernames starting with 'john'
+local players, error = client
+    :from("players")
+    :select("username")
+    :like("username", "john%")
+    :execute()
+```
+
+---
+
+### `ilike(column: string, pattern: string)`
+
+<TypeTable
+    type={{
+        ilike: {
+            description: "Case-insensitive pattern matching using SQL ILIKE operator.",
+            type: "function(column: string, pattern: string)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "pattern",
+                    type: "string",
+                    description: "The pattern to match. Use '%' as wildcard.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `ilike` method performs case-insensitive pattern matching using SQL's ILIKE operator.
+
+```lua
+-- Find usernames containing 'admin' (case-insensitive)
+local admins, error = client
+    :from("players")
+    :select("username")
+    :ilike("username", "%admin%")
+    :execute()
+```
+
+---
+
+### `is(column: string, value: boolean | "null")`
+
+<TypeTable
+    type={{
+        is: {
+            description: "Checks if column IS NULL or IS NOT NULL, or matches boolean value.",
+            type: 'function(column: string, value: boolean | "null")',
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: 'boolean | "null"',
+                    description: 'Use true/false for boolean columns, or "null" to check for NULL.',
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `is` method checks for NULL values or boolean equality.
+
+```lua
+-- Find players without an email
+local noEmailPlayers, error = client
+    :from("players")
+    :select("*")
+    :is("email", "null")
+    :execute()
+
+-- Find active players (assuming 'active' column is boolean)
+local activePlayers, error = client
+    :from("players")
+    :select("*")
+    :is("active", true)
+    :execute()
+```
+
+---
+
+### `in_(column: string, values: {any})`
+
+<TypeTable
+    type={{
+        in_: {
+            description: "Matches rows where column value is in the specified list.",
+            type: "function(column: string, values: {any})",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "values",
+                    type: "{any}",
+                    description: "Array of values to match against.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `in_` method checks if a column's value is in a specified list of values.
+
+```lua
+-- Find players with specific IDs
+local specificPlayers, error = client
+    :from("players")
+    :select("*")
+    :in_("id", {1, 2, 3, 5, 8})
+    :execute()
+
+-- Find players in specific levels
+local levelPlayers, error = client
+    :from("players")
+    :select("*")
+    :in_("level", {10, 20, 30, 40})
+    :execute()
+```
+
+---
+
+### `contains(column: string, value: any)`
+
+<TypeTable
+    type={{
+        contains: {
+            description: "Checks if array or range column contains the specified value.",
+            type: "function(column: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by (must be array or range type).",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The value to check for containment.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `contains` method checks if an array or range column contains the specified value.
+
+```lua
+-- Find players who have 'admin' in their roles array
+local admins, error = client
+    :from("players")
+    :select("*")
+    :contains("roles", {"admin"})
+    :execute()
+
+-- Find items in price range [10, 100]
+local midRangeItems, error = client
+    :from("items")
+    :select("*")
+    :contains("price_range", "[10,100]")
+    :execute()
+```
+
+---
+
+### `containedBy(column: string, value: any)`
+
+<TypeTable
+    type={{
+        containedBy: {
+            description: "Checks if array or range column is contained by the specified value.",
+            type: "function(column: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by (must be array or range type).",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The containing array or range.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `containedBy` method checks if an array or range column is contained by the specified value.
+
+```lua
+-- Find players whose roles are a subset of ['user', 'vip', 'admin']
+local subsetPlayers, error = client
+    :from("players")
+    :select("*")
+    :containedBy("roles", {"user", "vip", "admin"})
+    :execute()
+```
+
+---
+
+### `rangeGt(column: string, range: string)`
+
+<TypeTable
+    type={{
+        rangeGt: {
+            description: "Checks if range column is strictly greater than specified range.",
+            type: "function(column: string, range: string)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The range column to filter by.",
+                    required: true
+                },
+                {
+                    name: "range",
+                    type: "string",
+                    description: "The range to compare against in PostgreSQL range syntax.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `rangeGt` method checks if a range column is strictly greater than the specified range.
+
+```lua
+-- Find bookings that start after January 2024
+local futureBookings, error = client
+    :from("bookings")
+    :select("*")
+    :rangeGt("booking_period", "[2024-01-01,2024-01-31]")
+    :execute()
+```
+
+---
+
+### `rangeGte(column: string, range: string)`
+
+<TypeTable
+    type={{
+        rangeGte: {
+            description: "Checks if range column is greater than or equal to specified range.",
+            type: "function(column: string, range: string)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The range column to filter by.",
+                    required: true
+                },
+                {
+                    name: "range",
+                    type: "string",
+                    description: "The range to compare against in PostgreSQL range syntax.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `rangeGte` method checks if a range column is greater than or equal to the specified range.
+
+```lua
+-- Find bookings from January 2024 or later
+local januaryPlusBookings, error = client
+    :from("bookings")
+    :select("*")
+    :rangeGte("booking_period", "[2024-01-01,2024-01-31]")
+    :execute()
+```
+
+---
+
+### `rangeLt(column: string, range: string)`
+
+<TypeTable
+    type={{
+        rangeLt: {
+            description: "Checks if range column is strictly less than specified range.",
+            type: "function(column: string, range: string)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The range column to filter by.",
+                    required: true
+                },
+                {
+                    name: "range",
+                    type: "string",
+                    description: "The range to compare against in PostgreSQL range syntax.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `rangeLt` method checks if a range column is strictly less than the specified range.
+
+```lua
+-- Find bookings that end before January 2024
+local pastBookings, error = client
+    :from("bookings")
+    :select("*")
+    :rangeLt("booking_period", "[2024-01-01,2024-01-31]")
+    :execute()
+```
+
+---
+
+### `rangeLte(column: string, range: string)`
+
+<TypeTable
+    type={{
+        rangeLte: {
+            description: "Checks if range column is less than or equal to specified range.",
+            type: "function(column: string, range: string)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The range column to filter by.",
+                    required: true
+                },
+                {
+                    name: "range",
+                    type: "string",
+                    description: "The range to compare against in PostgreSQL range syntax.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `rangeLte` method checks if a range column is less than or equal to the specified range.
+
+```lua
+-- Find bookings up to January 2024
+local uptoJanuaryBookings, error = client
+    :from("bookings")
+    :select("*")
+    :rangeLte("booking_period", "[2024-01-01,2024-01-31]")
+    :execute()
+```
+
+---
+
+### `rangeAdjacent(column: string, range: string)`
+
+<TypeTable
+    type={{
+        rangeAdjacent: {
+            description: "Checks if range column is adjacent to specified range.",
+            type: "function(column: string, range: string)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The range column to filter by.",
+                    required: true
+                },
+                {
+                    name: "range",
+                    type: "string",
+                    description: "The range to check adjacency against in PostgreSQL range syntax.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `rangeAdjacent` method checks if a range column is adjacent to (immediately before or after) the specified range.
+
+```lua
+-- Find bookings adjacent to January 2024 (December 2023 or February 2024)
+local adjacentBookings, error = client
+    :from("bookings")
+    :select("*")
+    :rangeAdjacent("booking_period", "[2024-01-01,2024-01-31]")
+    :execute()
+```
+
+---
+
+### `overlaps(column: string, value: any)`
+
+<TypeTable
+    type={{
+        overlaps: {
+            description: "Checks if range or array column overlaps with specified value.",
+            type: "function(column: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The range or array column to filter by.",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The range or array to check for overlap.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `overlaps` method checks if a range or array column overlaps with the specified value.
+
+```lua
+-- Find bookings that overlap with January 2024
+local overlappingBookings, error = client
+    :from("bookings")
+    :select("*")
+    :overlaps("booking_period", "[2024-01-01,2024-01-31]")
+    :execute()
+
+-- Find players with overlapping tag arrays
+local similarPlayers, error = client
+    :from("players")
+    :select("*")
+    :overlaps("tags", {"rpg", "fantasy"})
+    :execute()
+```
+
+---
+
+### `match(query: {[string]: any})`
+
+<TypeTable
+    type={{
+        match: {
+            description: "Performs full-text search using PostgreSQL full-text search capabilities.",
+            type: "function(query: {[string]: any})",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "query",
+                    type: "{[string]: any}",
+                    description: "Object with column-value pairs for full-text matching.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `match` method performs full-text search using PostgreSQL's full-text search capabilities.
+
+```lua
+-- Search for players with specific attributes
+local matchedPlayers, error = client
+    :from("players")
+    :select("*")
+    :match({
+        username = "john",
+        email = "@gmail.com"
+    })
+    :execute()
+```
+
+---
+
+### `not_(column: string, operator: string, value: any)`
+
+<TypeTable
+    type={{
+        not_: {
+            description: "Negates a filter condition using specified operator.",
+            type: "function(column: string, operator: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "operator",
+                    type: "string",
+                    description: "The operator to negate (eq, gt, lt, etc.).",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The value for the operator.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `not_` method negates a filter condition using the specified operator.
+
+```lua
+-- Find players NOT with level 10
+local notLevel10, error = client
+    :from("players")
+    :select("*")
+    :not_("level", "eq", 10)
+    :execute()
+
+-- Find players NOT in levels 1-10
+local notLowLevel, error = client
+    :from("players")
+    :select("*")
+    :not_("level", "lte", 10)
+    :execute()
+```
+
+---
+
+### `filter(column: string, operator: string, value: any)`
+
+<TypeTable
+    type={{
+        filter: {
+            description: "Generic filter with custom operator for advanced filtering.",
+            type: "function(column: string, operator: string, value: any)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to filter by.",
+                    required: true
+                },
+                {
+                    name: "operator",
+                    type: "string",
+                    description: "The operator to use (eq, neq, gt, lt, etc.).",
+                    required: true
+                },
+                {
+                    name: "value",
+                    type: "any",
+                    description: "The value for the operator.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `filter` method provides a generic way to apply filters with custom operators.
+
+```lua
+-- Equivalent to :eq("level", 10)
+local level10Players, error = client
+    :from("players")
+    :select("*")
+    :filter("level", "eq", 10)
+    :execute()
+
+-- Using a less common operator
+local specialFilter, error = client
+    :from("items")
+    :select("*")
+    :filter("price", ">=", 100)
+    :execute()
+```
+
+---
+
+### `or_(filters: string, options: OrFilterOptions?)`
+
+<TypeTable
+    type={{
+        or_: {
+            description: "Combines multiple filters with OR logic.",
+            type: "function(filters: string, options: OrFilterOptions?)",
+            returns: "Next",
+            parameters: [
+                {
+                    name: "filters",
+                    type: "string",
+                    description: "Comma-separated filter conditions in PostgREST syntax.",
+                    required: true
+                },
+                {
+                    name: "options",
+                    type: "OrFilterOptions?",
+                    description: "Optional configuration for the OR filter.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+The `or_` method combines multiple filter conditions with OR logic.
+
+```lua
+-- Find players who are either level 10 OR have VIP status
+local specialPlayers, error = client
+    :from("players")
+    :select("*")
+    :or_("level.eq.10,status.eq.vip")
+    :execute()
+
+-- Find items in specific categories OR above certain price
+local filteredItems, error = client
+    :from("items")
+    :select("*")
+    :or_("category.in.(weapons,armor),price.gte.1000")
+    :execute()
+```
+
+---
+
+## Chaining Multiple Filters
+
+All filter methods can be chained together, and they use AND logic by default:
+
+```lua
+-- Find active players with level between 20 and 50 who joined recently
+local filteredPlayers, error = client
+    :from("players")
+    :select("*")
+    :eq("status", "active")          -- status = 'active'
+    :gte("level", 20)                -- AND level >= 20
+    :lte("level", 50)                -- AND level <= 50
+    :gte("created_at", "2024-01-01") -- AND created_at >= '2024-01-01'
+    :order("level", { ascending = false })
+    :limit(10)
+    :execute()
+```
+
+## Combining AND and OR Logic
+
+Use `or_()` within a chain to create OR conditions within an AND context:
+
+```lua
+-- Find players who are:
+-- 1. Active AND (level 10 OR VIP status)
+-- 2. Created in 2024
+local complexQuery, error = client
+    :from("players")
+    :select("*")
+    :eq("active", true)
+    :or_("level.eq.10,status.eq.vip")
+    :gte("created_at", "2024-01-01")
+    :execute()
+```
+
+---
+
+## Type Safety with Filter Methods
+
+All filter methods maintain type safety through the [`FilterStage<Next>`](docs/types#filterstagenext) generic type. This ensures that:
+
+- Filter methods can only be called on appropriate stages
+- Method chaining preserves the correct return types
+- You get IntelliSense support in Roblox Studio
+
+---
+
+## Error Handling
+
+Filter methods will return errors if:
+- The column doesn't exist
+- The value type doesn't match the column type
+- Invalid operator is used
+- Syntax errors in `or_()` filter strings
+
+Always check the error return value:
+```lua
+local result, err = client
+    :from("players")
+    :select("*")
+    :eq("nonexistent_column", "value") -- This will error
+    :execute()
+
+if err then
+warn("Filter error:", err)
+-- Handle error appropriately
+end
+```

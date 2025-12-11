@@ -12,6 +12,8 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 The `select()` method specifies which columns to retrieve from a table in your PostgreSQL database. This method initiates a SELECT query and returns an object that supports filtering, ordering, limiting, and other query modifiers.
 
+---
+
 ## Method Signature
 
 <TypeTable
@@ -31,6 +33,8 @@ The `select()` method specifies which columns to retrieve from a table in your P
     }}
 />
 
+---
+
 ## Basic Usage
 
 ```lua
@@ -48,6 +52,8 @@ else
     end
 end
 ```
+
+---
 
 ## Column Selection Patterns
 
@@ -83,6 +89,8 @@ local playerWithRelations = client
     :single()
     :execute()
 ```
+
+---
 
 ## Complete Examples
 
@@ -157,6 +165,8 @@ local recentHighLevelPlayers, err = client
     :execute()
 ```
 
+---
+
 ## Method Chaining Order
 
 ### Correct Order
@@ -180,53 +190,7 @@ local result = client
     :execute()
 ```
 
-## Common Patterns
-
-### Pagination
-
-```lua
--- Get page 2 of results (rows 11-20)
-local page2 = client
-    :from("players")
-    :select("*")
-    :order("created_at", { ascending = false })
-    :range(11, 20)
-    :execute()
-```
-
-### Single Row Retrieval
-
-```lua
--- Get exactly one player by ID
-local player = client
-    :from("players")
-    :select("*")
-    :eq("id", 123)
-    :single()
-    :execute()
-
--- Get one player or nil if not found
-local maybePlayer = client
-    :from("players")
-    :select("*")
-    :eq("id", 999)
-    :maybeSingle()
-    :execute()
-```
-
-### CSV Format Output
-
-```lua
--- Get data in CSV format
-local csvData = client
-    :from("players")
-    :select("id,username,level")
-    :csv()
-    :execute()
-
--- csvData will be a string in CSV format
-print(csvData)
-```
+---
 
 ## Error Handling
 
@@ -270,35 +234,4 @@ end
 
 -- Usage
 local players = safeSelect("players", "id, username, level")
-```
-
-## Performance Considerations
-
-### 1. Limit Result Sets
-
-```lua
--- Always limit large tables
-local limitedResults = client
-    :from("game_logs")  -- Potentially millions of rows
-    :select("*")
-    :limit(1000)  -- Prevent overwhelming response
-    :execute()
-```
-
-### 2. Use Indexed Columns in Filters
-
-```lua
--- Faster: Filter on indexed column (id)
-local fastQuery = client
-    :from("players")
-    :select("*")
-    :eq("id", 123)  -- id is typically indexed
-    :execute()
-
--- Slower: Filter on non-indexed column (username without index)
-local slowQuery = client
-    :from("players")
-    :select("*")
-    :eq("username", "some_name")  -- May be slower without index
-    :execute()
 ```

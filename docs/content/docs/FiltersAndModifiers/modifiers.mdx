@@ -1,0 +1,643 @@
+---
+title: Modifier Methods
+description: Learn how to use modifier methods to refine and control query results in the Roblox Supabase client.
+icon: SquareDot
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+<Callout title="Modifier methods must be used AFTER Filter methods." type="warn" />
+
+Modifier methods are available in the [`SelectModifierStage`](/docs/types#selectmodifierstage) and [`RPCModifierStage`](/docs/types#rpcmodifierstage). These methods allow you to control the ordering, limiting, and formatting of your query results. Modifiers are divided into two categories: **non-final modifiers** that remain chainable within the modifier stage, and **finalizers** that collapse the query chain to `FinalStage`.
+
+## Non-Final Modifiers
+
+Non-final modifiers can be chained together in any order and keep you in the modifier stage for further chaining.
+
+### `order(column: string, options: OrderOptions?)`
+
+<TypeTable
+    type={{
+        order: {
+            description: "Sorts query results by the specified column(s).",
+            type: "function(column: string, options: OrderOptions?)",
+            returns: "ModifierStage",
+            parameters: [
+                {
+                    name: "column",
+                    type: "string",
+                    description: "The column to sort by. Use 'column.asc' or 'column.desc' for explicit direction, or comma-separate multiple columns.",
+                    required: true
+                },
+                {
+                    name: "options",
+                    type: "OrderOptions?",
+                    description: "Optional configuration for ordering behavior.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+The `order` method sorts query results based on one or more columns. This is a non-final modifier that returns [`ModifierStage`](/docs/types#modifierstage) for further chaining.
+
+```lua
+-- Order players by level descending
+local topPlayers, error = client
+    :from("players")
+    :select("*")
+    :order("level", { ascending = false })
+    :execute()
+
+-- Order by multiple columns
+local orderedResults, error = client
+    :from("players")
+    :select("*")
+    :order("status, level.desc, username.asc")
+    :execute()
+
+-- Order with nulls first
+local withNullsFirst, error = client
+    :from("players")
+    :select("*")
+    :order("last_login", { ascending = true, nullsFirst = true })
+    :execute()
+```
+
+You can also pass [options](/docs/types#orderoptions) to define how your `order` modifier should behave.
+
+---
+
+### `limit(count: number, options: LimitOptions?)`
+
+<TypeTable
+    type={{
+        limit: {
+            description: "Limits the number of rows returned by the query.",
+            type: "function(count: number, options: LimitOptions?)",
+            returns: "ModifierStage",
+            parameters: [
+                {
+                    name: "count",
+                    type: "number",
+                    description: "Maximum number of rows to return.",
+                    required: true
+                },
+                {
+                    name: "options",
+                    type: "LimitOptions?",
+                    description: "Optional configuration for limiting behavior.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+The `limit` method restricts the number of rows returned by a query. This is a non-final modifier that returns `ModifierStage` for further chaining.
+
+```lua
+-- Get only 10 players
+local limitedPlayers, error = client
+    :from("players")
+    :select("*")
+    :limit(10)
+    :execute()
+
+-- Get top 5 high-level players
+local topFive, error = client
+    :from("players")
+    :select("*")
+    :order("level", { ascending = false })
+    :limit(5)
+    :execute()
+
+-- Limit with foreign table
+local withForeignLimit, error = client
+    :from("players")
+    :select("*, inventory(*)")
+    :limit(5, { foreignTable = "inventory" })
+    :execute()
+```
+
+You can also pass [options](/docs/types#limitoptions) to define how your `limit` modifier should behave.
+
+---
+
+### `range(from: number, to: number, options: RangeOptions?)`
+
+<TypeTable
+    type={{
+        range: {
+            description: "Retrieves a specific range of rows for pagination.",
+            type: "function(from: number, to: number, options: RangeOptions?)",
+            returns: "ModifierStage",
+            parameters: [
+                {
+                    name: "from",
+                    type: "number",
+                    description: "Starting index (0-based) of the range.",
+                    required: true
+                },
+                {
+                    name: "to",
+                    type: "number",
+                    description: "Ending index (inclusive) of the range.",
+                    required: true
+                },
+                {
+                    name: "options",
+                    type: "RangeOptions?",
+                    description: "Optional configuration for range behavior.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+The `range` method retrieves a specific subset of rows, useful for pagination. This is a non-final modifier that returns `ModifierStage` for further chaining.
+
+```lua
+-- Get rows 0-9 (first page of 10 items)
+local firstPage, error = client
+    :from("players")
+    :select("*")
+    :range(0, 9)
+    :execute()
+
+-- Get rows 10-19 (second page)
+local secondPage, error = client
+    :from("players")
+    :select("*")
+    :order("created_at")
+    :range(10, 19)
+    :execute()
+
+-- Range with foreign table
+local paginatedWithRelations, error = client
+    :from("players")
+    :select("*, achievements(*)")
+    :range(0, 4, { foreignTable = "achievements" })
+    :execute()
+```
+
+You can also pass [options](/docs/types#rangeoptions) to define how your `range` modifier should behave.
+
+---
+
+## Finalizers
+
+Finalizers collapse the query chain to [`FinalStage`](/docs/types#finalstage), after which only execution methods (`execute()`, `executeTyped()`) are available.
+
+### `single()`
+
+<TypeTable
+    type={{
+        single: {
+            description: "Expects exactly one row from the query. Returns an error if zero or multiple rows are found.",
+            type: "function()",
+            returns: "FinalStage",
+            parameters: []
+        }
+    }}
+/>
+
+The `single` method expects the query to return exactly one row. If zero or multiple rows are found, it returns an error. This is a finalizer that collapses to [`FinalStage`](/docs/types#finalstage).
+
+```lua
+-- Get exactly one player by ID (will error if not found)
+local player, error = client
+    :from("players")
+    :select("*")
+    :eq("id", 123)
+    :single()
+    :execute()
+
+if error then
+    if error:find("0 rows") then
+        warn("Player not found")
+    elseif error:find("more than 1 row") then
+        warn("Multiple players found with same ID")
+    end
+end
+
+-- Get single player by unique username
+local uniquePlayer, error = client
+    :from("players")
+    :select("*")
+    :eq("username", "john_doe")
+    :single()
+    :execute()
+```
+
+---
+
+### `maybeSingle()`
+
+<TypeTable
+    type={{
+        maybeSingle: {
+            description: "Returns one row or nil if no rows are found. Returns an error if multiple rows are found.",
+            type: "function()",
+            returns: "FinalStage",
+            parameters: []
+        }
+    }}
+/>
+
+The `maybeSingle` method returns one row if found, or nil if no rows are found. It returns an error only if multiple rows are found. This is a finalizer that collapses to [`FinalStage`](/docs/types#finalstage).
+
+```lua
+-- Get player by ID, returns nil if not found
+local player, error = client
+    :from("players")
+    :select("*")
+    :eq("id", 999)
+    :maybeSingle()
+    :execute()
+
+if error then
+    warn("Error:", error)
+elseif not player then
+    print("Player not found")
+else
+    print("Found player:", player.username)
+end
+
+-- Safe user lookup
+local function findUser(email)
+    local user, err = client
+        :from("users")
+        :select("*")
+        :eq("email", email)
+        :maybeSingle()
+        :execute()
+
+    if err then
+        warn("Lookup error:", err)
+        return nil
+    end
+
+    return user
+end
+```
+
+---
+
+### `csv()`
+
+<TypeTable
+    type={{
+        csv: {
+            description: "Requests the response in CSV format instead of JSON.",
+            type: "function()",
+            returns: "FinalStage",
+            parameters: []
+        }
+    }}
+/>
+
+The `csv` method requests the query results in CSV format. This is a finalizer that collapses to [`FinalStage`](/docs/types#finalstage).
+
+```lua
+-- Get data as CSV
+local csvData, error = client
+    :from("players")
+    :select("id,username,level,created_at")
+    :csv()
+    :execute()
+
+if not error then
+    -- csvData is a string in CSV format
+    print("CSV Data:")
+    print(csvData)
+
+    -- You can parse it or save it to a file
+    local lines = csvData:split("\n")
+    for _, line in ipairs(lines) do
+        print("Line:", line)
+    end
+end
+
+-- Export filtered data as CSV
+local exportData, error = client
+    :from("transactions")
+    :select("id,amount,type,created_at")
+    :gte("created_at", "2024-01-01")
+    :lte("created_at", "2024-01-31")
+    :order("created_at")
+    :csv()
+    :execute()
+```
+
+---
+
+### `returns(representation: "minimal" | "representation")`
+
+<TypeTable
+    type={{
+        returns: {
+            description: "Specifies the return representation preference for mutation operations.",
+            type: 'function(representation: "minimal" | "representation")',
+            returns: "FinalStage",
+            parameters: [
+                {
+                    name: "representation",
+                    type: '"minimal" | "representation"',
+                    description: '"minimal" returns only success status, "representation" returns the affected data.',
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `returns` method specifies how much information should be returned from mutation operations (INSERT, UPDATE, DELETE, UPSERT). This is a finalizer that collapses to [`FinalStage`](/docs/types#finalstage).
+
+```lua
+-- Insert with minimal return (just success status)
+local success, error = client
+    :from("players")
+    :insert({
+        username = "new_player",
+        level = 1
+    })
+    :returns("minimal")
+    :execute()
+
+if success then
+    print("Insert successful")
+end
+
+-- Update with full data return
+local updatedData, error = client
+    :from("players")
+    :update({ level = 10 })
+    :eq("id", 123)
+    :returns("representation")
+    :execute()
+
+if not error then
+    print("Updated player:", updatedData[1].username)
+end
+
+-- Delete with minimal return
+local deleteSuccess, error = client
+    :from("inactive_players")
+    :delete()
+    :lt("last_login", "2023-01-01")
+    :returns("minimal")
+    :execute()
+```
+
+---
+
+### `overrideTypes(schema: table)`
+
+<TypeTable
+    type={{
+        overrideTypes: {
+            description: "Overrides the runtime type validation schema for the query.",
+            type: "function(schema: table)",
+            returns: "FinalStage",
+            parameters: [
+                {
+                    name: "schema",
+                    type: "table",
+                    description: "Schema table defining expected types for validation.",
+                    required: true
+                }
+            ]
+        }
+    }}
+/>
+
+The `overrideTypes` method allows you to provide a custom type validation schema for runtime type checking. This is a finalizer that collapses to [`FinalStage`](/docs/types#finalstage).
+
+```lua
+-- Define custom type schema
+local playerSchema = {
+    id = "number",
+    username = "string",
+    level = "number",
+    inventory = {
+        type = "table",
+        schema = {
+            item_id = "number",
+            quantity = "number"
+        }
+    }
+}
+
+-- Use custom schema for validation
+local players, error = client
+    :from("players")
+    :select("*, inventory(*)")
+    :overrideTypes(playerSchema)
+    :execute()
+
+if error then
+    warn("Type validation error:", error)
+end
+
+-- Schema for nested data
+local complexSchema = {
+    id = "number",
+    name = "string",
+    stats = {
+        type = "table",
+        schema = {
+            health = "number",
+            mana = "number",
+            stamina = "number"
+        }
+    },
+    tags = { type = "table", elementType = "string" }
+}
+
+local data, error = client
+    :from("characters")
+    :select("*")
+    :overrideTypes(complexSchema)
+    :execute()
+```
+
+---
+
+### `explain(options: ExplainOptions?)`
+
+<TypeTable
+    type={{
+        explain: {
+            description: "Gets the query execution plan instead of executing the query.",
+            type: "function(options: ExplainOptions?)",
+            returns: "FinalStage",
+            parameters: [
+                {
+                    name: "options",
+                    type: "ExplainOptions?",
+                    description: "Optional configuration for the explain output.",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+The `explain` method retrieves the PostgreSQL query execution plan, useful for performance analysis and optimization. This is a finalizer that collapses to [`FinalStage`](/docs/types#finalstage).
+
+```lua
+-- Get basic query plan
+local plan, error = client
+    :from("players")
+    :select("*")
+    :eq("level", 10)
+    :explain()
+    :execute()
+
+if not error then
+    print("Query Plan:")
+    print(plan)
+end
+
+-- Get detailed analysis with timing
+local detailedPlan, error = client
+    :from("players")
+    :select("*")
+    :join("inventory", "players.id = inventory.player_id")
+    :eq("players.level", 50)
+    :explain({
+        analyze = true,
+        verbose = true,
+        format = "json"
+    })
+    :execute()
+
+if not error then
+    -- Parse JSON plan for analysis
+    local planData = game:GetService("HttpService"):JSONDecode(detailedPlan)
+    print("Total cost:", planData[1].Plan["Total Cost"])
+end
+```
+
+You can also pass [options](/docs/types#explainoptions) to define how your `explain` modifier should behave.
+
+---
+
+## Chaining Modifiers
+
+Modifiers can be chained together in flexible ways. Non-final modifiers can be combined in any order, **and finalizers must come last**.
+
+### Correct Usage Patterns
+
+```lua
+-- Chain non-final modifiers
+local results, error = client
+    :from("players")
+    :select("*")
+    :order("level", { ascending = false })
+    :limit(10)
+    :range(0, 9)
+    :execute()
+
+-- Mix filters and modifiers
+local filtered, error = client
+    :from("players")
+    :select("*")
+    :eq("status", "active")
+    :gte("level", 20)
+    :order("level")
+    :limit(5)
+    :execute()
+
+-- Finalizer ends the chain
+local singleResult, error = client
+    :from("players")
+    :select("*")
+    :eq("id", 123)
+    :single()  -- Finalizer: no more chaining after this
+    :execute()
+```
+
+### Incorrect Usage Patterns
+
+```lua
+-- ERROR: Cannot chain after finalizer
+local errorResult = client
+    :from("players")
+    :select("*")
+    :single()  -- Finalizer
+    :limit(10) -- ERROR: Cannot chain after finalizer
+    :execute()
+
+-- ERROR: Finalizer in wrong position
+local errorResult = client
+    :from("players")
+    :select("*")
+    :single()  -- Finalizer too early
+    :eq("id", 123)  -- ERROR: Cannot filter after finalizer
+    :execute()
+```
+
+---
+
+## Stage Transition Behavior
+
+Understanding how modifiers transition between stages is crucial for correct usage:
+
+1. **From Filter Stage to Modifier Stage:**
+   - `order()`, `limit()`, `range()` transition from [`SelectFilterStage`](/docs/types#selectfilterstage)/[`RPCFilterStage`](/docs/types#rpcfilterstage) to [`SelectModifierStage`](/docs/types#selectmodifierstage)/[`RPCModifierStage`](/docs/types#rpcmodifierstage)
+
+2. **Within Modifier Stage:**
+   - `order()`, `limit()`, `range()` remain in modifier stage (chainable)
+   - Finalizers collapse to [`FinalStage`](/docs/types#finalstage)
+
+3. **From Modifier Stage to Final Stage:**
+   - `single()`, `maybeSingle()`, `csv()`, `returns()`, `overrideTypes()`, `explain()` collapse to [`FinalStage`](/docs/types#finalstage)
+
+---
+
+## Error Handling with Modifiers
+
+Different modifiers can produce different types of errors:
+
+```lua
+-- single() errors
+local result, err = client
+    :from("players")
+    :select("*")
+    :eq("id", 9999)
+    :single()  -- Will error: "0 rows returned"
+    :execute()
+
+-- maybeSingle() errors
+local result, err = client
+    :from("players")
+    :select("*")
+    :eq("level", 1)  -- Multiple level 1 players
+    :maybeSingle()   -- Will error: "more than 1 row"
+    :execute()
+
+-- range() errors
+local result, err = client
+    :from("players")
+    :select("*")
+    :range(-1, 10)  -- Invalid range
+    :execute()
+
+-- Always check errors
+if err then
+    if err:find("0 rows") then
+        -- Handle no results
+    elseif err:find("more than 1 row") then
+        -- Handle multiple results
+    elseif err:find("range") then
+        -- Handle range error
+    else
+        -- Handle other errors
+        warn("Query error:", err)
+    end
+end
+```
