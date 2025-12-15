@@ -4,6 +4,57 @@ description: Contribution guide for those who would like to support the project 
 icon: Album
 ---
 
+There's a few steps I'd like y'all to know about in order to keep things organized.
+
+## Cloning the repository
+
+If you're familiar with Git & Github, this must be a no brainer. Simply enter these commands in your workspace:
+
+```bash
+git clone https://github.com/chteau/Roblox-Supabase.git
+cd ./Roblox-Supabase
+```
+
+Simply create a new branch for your changes and create a pull request once done.
+
+## Creating a pull request
+
+When creating a pull request, you're more than invited to use this template to make me review your changes faster:
+
+```md
+
+## Title
+
+A title to your pull request
+
+## Description
+
+A clear and concise description for the pull request
+
+- A reference to a related issue in the repo
+- Summary of changes
+- Reasoning
+- Additional context
+
+## Documentation
+
+Add any notes that would help me documenting the new features / changes on the docs. Don't worry about the way you word things, just a few words and a code snippets would do the job.
+
+## Contributor License Agreement
+
+I give Cheeteau, LLC permission to license my contributions on any terms they like. I am giving them this license in order to make it possible for them to accept my contributions into their project.
+
+**_As far as the law allows, my contributions come as is, without any warranty or condition, and I will not be liable to anyone for any damages related to this software or this license, under any kind of legal claim._**
+
+```
+
+Before creating a pull request make sure:
+- [ ] Filled the markdown above for the title, description and documentation.
+- [ ] Added in-code documentation (luadocs comments)
+- [ ] Wrote tests for new components / features (in the Unit Test files)
+
+Once you verified all of that, feel free to just continue working on the project or use it! :D
+
 ## Executing Unit Tests
 
 To run the unit tests, you need to create the `unittests` table in your Supabase database. Execute the following SQL in your Supabase SQL editor:
