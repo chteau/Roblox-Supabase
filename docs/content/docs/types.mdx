@@ -748,6 +748,27 @@ Configuration options for query execution plan explanation.
     }}
 />
 
+### `FunctionsInvokeOptions`
+
+Configuration options for invoking Supabase Edge Functions.
+
+<TypeTable
+    type={{
+        headers: {
+            description: "Your additional request headers.",
+            type: "table?"
+        },
+        method: {
+            description: "HTTP method to use for the request.",
+            type: "POST | GET | PUT | DELETE | PATCH"
+        },
+        region: {
+            description: "The region to use for the request.",
+            type: "string?"
+        },
+    }}
+/>
+
 ## Service Client Types
 
 ### `RestClient`

@@ -1,0 +1,315 @@
+---
+title: Edge Functions
+description: Invoke serverless functions on Supabase Edge Runtime.
+icon: Cloud
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# Edge Functions Client
+
+The Edge Functions client allows you to invoke serverless functions running on Supabase's global edge network. This is useful for executing backend logic without managing servers.
+
+---
+
+## `invoke(functionName, payload?, options?)`
+
+<Callout title="Use for JSON responses" type="info" />
+This method automatically parses JSON responses and handles common error patterns. It's the recommended way to invoke most Edge Functions.
+
+<TypeTable
+    type={{
+        invoke: {
+            description: "Invokes an Edge Function and parses the JSON response.",
+            type: 'function(functionName: string, payload: table?) -> (any, string?)',
+            parameters: [
+                {
+                    name: "functionName",
+                    type: "string",
+                    description: "Name of the Edge Function to invoke",
+                    required: true
+                },
+                {
+                    name: "payload",
+                    type: "table?",
+                    description: "Optional payload to send to the function",
+                    required: false
+                },
+                {
+                    name: "options",
+                    type: "FunctionsInvokeOptions?",
+                    description: "Optional configuration options",
+                    required: false
+                }
+            ],
+        }
+    }}
+/>
+
+You can also use some [options](/docs/types#functionsinvokeoptions) in order to invoke your function.
+
+### Basic Invocation
+
+```lua
+-- Invoke a function without payload
+local result, err = client.functions:invoke("hello-world")
+
+if err then
+    warn("Function failed:", err)
+else
+    print("Response:", result)
+end
+
+-- Invoke with payload
+local data, err = functions:invoke("process-data", {
+    userId = 123,
+    action = "update",
+    metadata = {
+        level = 50,
+        items = {"sword", "shield"}
+    }
+})
+```
+
+### Handling Different Response Types
+
+```lua
+-- JSON response (automatically parsed)
+local jsonResult, err = functions:invoke("get-user-data", { id = 123 })
+-- Returns: { username = "player1", level = 50 } (as table)
+
+-- Text response (plain text)
+local textResult, err = functions:invoke("generate-token")
+-- Returns: "abc123def456" (as string)
+
+-- Empty response
+local result, err = functions:invoke("log-activity", { event = "login" })
+-- Returns: nil, nil on success
+```
+
+### Error Handling Examples
+
+```lua
+-- Function doesn't exist
+local result, err = functions:invoke("nonexistent-function")
+if err then
+    warn(err) -- "Edge Function 'nonexistent-function' failed: Not Found"
+end
+
+-- Function returns error
+local result, err = functions:invoke("failing-function")
+if err then
+    warn(err) -- "Edge Function 'failing-function' failed: Internal Server Error"
+end
+
+-- Network failure
+local result, err = functions:invoke("some-function")
+if err then
+    warn(err) -- "Edge Function 'some-function' failed: Connection failed"
+end
+```
+
+---
+
+## `invokeRaw(functionName, payload?, options?)`
+
+<Callout title="Use for full control" type="warning" />
+This method returns the raw HTTP response table, giving you access to status codes, headers, and raw body. Use this when you need to handle non-JSON responses or inspect response metadata.
+
+<TypeTable
+    type={{
+        invokeRaw: {
+            description: "Invokes an Edge Function and returns the raw HTTP response.",
+            type: 'function(functionName: string, payload: table?) -> (table, string?)',
+            parameters: [
+                {
+                    name: "functionName",
+                    type: "string",
+                    description: "Name of the Edge Function to invoke",
+                    required: true
+                },
+                {
+                    name: "payload",
+                    type: "table?",
+                    description: "Optional payload to send to the function",
+                    required: false
+                },
+                {
+                    name: "options",
+                    type: "FunctionsInvokeOptions?",
+                    description: "Optional configuration options",
+                    required: false
+                }
+            ],
+        }
+    }}
+/>
+
+You can also use some [options](/docs/types#functionsinvokeoptions) in order to invoke your function.
+
+### Raw Response Structure
+
+You can see those on the [Roblox Official Documentation](https://create.roblox.com/docs/reference/engine/classes/HttpService?utm_source=studio&utm_content=hover_tip#RequestAsync):
+
+```lua
+local response, err = functions:invokeRaw("get-data")
+
+if not err then
+    print("Success:", response.Success) -- boolean
+    print("Status:", response.StatusCode) -- number (200, 404, 500, etc.)
+    print("Message:", response.StatusMessage) -- string ("OK", "Not Found", etc.)
+    print("Headers:", response.Headers) -- table of header key-value pairs
+    print("Body:", response.Body) -- raw response body as string
+end
+```
+
+### Accessing Response Headers
+
+```lua
+local response, err = functions:invokeRaw("generate-file")
+
+if not err and response.Success then
+    local contentType = response.Headers["Content-Type"]
+    local contentLength = response.Headers["Content-Length"]
+
+    if contentType == "application/pdf" then
+        -- Handle PDF data
+        print("Received PDF of size:", contentLength)
+    end
+end
+```
+
+### Manual JSON Parsing
+
+```lua
+local response, err = functions:invokeRaw("get-complex-data")
+
+if not err and response.Success then
+    local ok, parsed = pcall(function()
+        return HttpService:JSONDecode(response.Body)
+    end)
+
+    if ok then
+        print("Parsed data:", parsed)
+    else
+        warn("Failed to parse JSON:", parsed)
+    end
+end
+```
+
+---
+
+## Error Patterns and Solutions
+
+### Common Errors
+
+```lua
+-- 1. Function not deployed
+local result, err = functions:invoke("undeployed-function")
+-- Error: "Edge Function 'undeployed-function' failed: Not Found"
+
+-- 2. Function execution error
+local result, err = functions:invoke("buggy-function")
+-- Error: "Edge Function 'buggy-function' failed: Internal Server Error"
+
+-- 3. Network issues
+local result, err = functions:invoke("any-function")
+-- Error: "Edge Function 'any-function' failed: Connection failed"
+```
+
+### Retry Logic Implementation
+
+```lua
+local function invokeWithRetry(functionName, payload, maxRetries)
+    local lastError
+
+    for attempt = 1, maxRetries do
+        local result, err = functions:invoke(functionName, payload)
+
+        if not err then
+            return result
+        end
+
+        lastError = err
+
+        -- Only retry on network errors, not application errors
+        if not string.find(err:lower(), "connection") and
+           not string.find(err:lower(), "timeout") then
+            break
+        end
+
+        -- Exponential backoff
+        local waitTime = math.min(2 ^ (attempt - 1), 10)
+        print(string.format("Retry %d/%d in %ds...", attempt, maxRetries, waitTime))
+        task.wait(waitTime)
+    end
+
+    return nil, "Failed after " .. maxRetries .. " retries: " .. (lastError or "unknown error")
+end
+
+-- Usage
+local data = invokeWithRetry("important-function", { id = 123 }, 3)
+```
+
+---
+
+## Best Practices
+
+### 1. Use Appropriate Method
+
+```lua
+-- Use invoke() for most cases
+local userData, err = functions:invoke("get-user", { id = 123 })
+
+-- Use invokeRaw() only when you need:
+-- - Response headers
+-- - Raw response body
+-- - Custom parsing
+-- - Binary data
+local rawResponse, err = functions:invokeRaw("download-file", { fileId = 456 })
+```
+
+### 2. Handle Timeouts Appropriately
+
+```lua
+local function invokeWithTimeout(functionName, payload, timeout)
+    local result
+    local err
+
+    local thread = coroutine.create(function()
+        result, err = functions:invoke(functionName, payload)
+    end)
+
+    coroutine.resume(thread)
+
+    local start = os.clock()
+    while coroutine.status(thread) ~= "dead" do
+        if os.clock() - start > timeout then
+            return nil, "Request timeout"
+        end
+        task.wait()
+    end
+
+    return result, err
+end
+```
+
+### 3. Batch Operations
+
+```lua
+local function batchInvoke(requests)
+    local responses = {}
+
+    -- Use invokeRaw to avoid unnecessary JSON parsing
+    for _, req in ipairs(requests) do
+        local response, err = functions:invokeRaw(req.functionName, req.payload)
+        table.insert(responses, {
+            request = req,
+            response = response,
+            error = err
+        })
+    end
+
+    return responses
+end
+```
