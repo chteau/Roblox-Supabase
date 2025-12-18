@@ -18,6 +18,9 @@
         "FiltersAndModifiers/filters",
         "FiltersAndModifiers/modifiers",
 
+        "---Edge Functions---",
+        "EdgeFunctions/edge-functions",
+
         "---Types---",
         "types"
     ]
