@@ -1,0 +1,445 @@
+---
+title: Call a PostgreSQL Function
+description: Invoke PostgreSQL functions (stored procedures) using the Supabase client.
+icon: Parentheses
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# `rpc(functionName: string, params: {[string]: any}?)`
+
+The `rpc()` method calls PostgreSQL functions (stored procedures) on your database. This allows you to execute complex database logic, run custom queries, or call functions that don't map directly to table operations.
+
+<Callout title="PostgreSQL functions vs Edge Functions" type="warning">
+    PostgreSQL functions run on your database server, while Edge Functions run on Supabase's edge network. Use `rpc()` for database logic and `functions:invoke()` for serverless application logic.
+</Callout>
+
+---
+
+## Method Signature
+
+<TypeTable
+    type={{
+        rpc: {
+            description: "Invokes a PostgreSQL stored procedure or function.",
+            type: 'function(functionName: string, params: {[string]: any}?) -> RootQuery',
+            parameters: [
+                {
+                    name: "functionName",
+                    type: "string",
+                    description: "Name of the PostgreSQL function to call",
+                    required: true
+                },
+                {
+                    name: "params",
+                    type: "{[string]: any}?",
+                    description: "Parameters to pass to the function, matching the function's parameter names",
+                    required: false
+                }
+            ]
+        }
+    }}
+/>
+
+---
+
+## Basic Usage
+
+```lua
+-- Call a PostgreSQL function without parameters
+local result, err = client
+    :rpc("get_server_stats")
+    :execute()
+
+if err then
+    warn("Function call failed:", err)
+else
+    print("Server stats:", result)
+end
+
+-- Call a function with parameters
+local userData, err = client
+    :rpc("get_user_by_username", {
+        p_username = "dragonwarrior"
+    })
+    :execute()
+```
+
+---
+
+## Complete Examples
+
+### Example 1: User Authentication Function
+
+```lua
+-- PostgreSQL function signature:
+-- FUNCTION authenticate_user(username TEXT, password_hash TEXT) RETURNS JSON
+
+local function authenticate(username, passwordHash)
+    local result, err = client
+        :rpc("authenticate_user", {
+            username = username,
+            password_hash = passwordHash
+        })
+        :single()
+        :execute()
+
+    if err then
+        return nil, "Authentication failed: " .. err
+    end
+
+    if result.success == false then
+        return nil, result.message or "Invalid credentials"
+    end
+
+    return {
+        userId = result.user_id,
+        sessionToken = result.session_token,
+        expiresAt = result.expires_at
+    }
+end
+
+-- Usage
+local authResult, authErr = authenticate("player1", "hashed_password_123")
+if authErr then
+    warn(authErr)
+else
+    print("Authenticated! User ID:", authResult.userId)
+end
+```
+
+### Example 2: Complex Game Calculation
+
+```lua
+-- PostgreSQL function that calculates combat results
+-- FUNCTION calculate_damage(
+--     attacker_level INTEGER,
+--     defender_level INTEGER,
+--     weapon_power FLOAT,
+--     armor_defense FLOAT,
+--     critical_chance FLOAT
+-- ) RETURNS TABLE(damage FLOAT, is_critical BOOLEAN, status TEXT)
+
+local function simulateCombat(attacker, defender)
+    local combatResult, err = client
+        :rpc("calculate_damage", {
+            attacker_level = attacker.level,
+            defender_level = defender.level,
+            weapon_power = attacker.weaponPower,
+            armor_defense = defender.armorDefense,
+            critical_chance = attacker.criticalChance
+        })
+        :execute()
+
+    if err then
+        warn("Combat calculation failed:", err)
+        return { damage = 0, isCritical = false, status = "failed" }
+    end
+
+    return combatResult[1] -- Returns single row as a table
+end
+
+-- Usage in game
+local damageInfo = simulateCombat(
+    { level = 50, weaponPower = 125.5, criticalChance = 0.15 },
+    { level = 48, armorDefense = 85.2 }
+)
+
+print(string.format("Damage: %.1f (Critical: %s)",
+    damageInfo.damage,
+    damageInfo.is_critical and "YES" or "NO"
+))
+```
+
+### Example 3: Batch Processing with Array Parameters
+
+```lua
+-- PostgreSQL function that processes multiple items
+-- FUNCTION process_inventory_items(item_ids INTEGER[], action TEXT)
+-- RETURNS TABLE(item_id INTEGER, success BOOLEAN, message TEXT)
+
+local function bulkUpdateInventory(itemIds, action)
+    local results, err = client
+        :rpc("process_inventory_items", {
+            item_ids = itemIds,  -- Pass array directly
+            action = action
+        })
+        :execute()
+
+    if err then
+        return nil, "Bulk update failed: " .. err
+    end
+
+    -- Process results
+    local successful = {}
+    local failed = {}
+
+    for _, result in ipairs(results) do
+        if result.success then
+            table.insert(successful, result.item_id)
+        else
+            table.insert(failed, {
+                itemId = result.item_id,
+                reason = result.message
+            })
+        end
+    end
+
+    return {
+        successful = successful,
+        failed = failed,
+        successRate = #successful / #itemIds
+    }
+end
+
+-- Usage
+local updateResult, updateErr = bulkUpdateInventory(
+    {101, 102, 103, 104, 105},
+    "upgrade_tier"
+)
+
+if updateErr then
+    warn(updateErr)
+else
+    print(string.format("Upgraded %d/%d items successfully",
+        #updateResult.successful,
+        #updateResult.successful + #updateResult.failed
+    ))
+end
+```
+
+### Example 4: Aggregation and Reporting
+
+```lua
+-- PostgreSQL function that generates game reports
+-- FUNCTION generate_daily_report(report_date DATE)
+-- RETURNS JSON
+
+local function getDailyReport(dateString)
+    -- Use today's date if not provided
+    local targetDate = dateString or os.date("%Y-%m-%d")
+
+    local report, err = client
+        :rpc("generate_daily_report", {
+            report_date = targetDate
+        })
+        :single()
+        :execute()
+
+    if err then
+        return nil, "Report generation failed: " .. err
+    end
+
+    return {
+        date = report.date,
+        totalPlayers = report.total_players,
+        activePlayers = report.active_players,
+        newRegistrations = report.new_registrations,
+        revenue = report.revenue,
+        mostPlayedGame = report.most_played_game,
+        peakConcurrent = report.peak_concurrent
+    }
+end
+
+-- Usage
+local dailyReport, reportErr = getDailyReport("2024-01-15")
+if reportErr then
+    warn(reportErr)
+else
+    print(string.format("Daily Report for %s:", dailyReport.date))
+    print(string.format("Active Players: %d", dailyReport.activePlayers))
+    print(string.format("Revenue: $%.2f", dailyReport.revenue))
+end
+```
+
+### Example 5: Type-Safe Function Calls
+
+```lua
+-- Define types for function parameters and return value
+type CombatParams = {
+    attacker_level: number,
+    defender_level: number,
+    weapon_power: number,
+    armor_defense: number,
+    critical_chance: number
+}
+
+type CombatResult = {
+    damage: number,
+    is_critical: boolean,
+    status: string
+}
+
+-- Call with type validation
+local params: CombatParams = {
+    attacker_level = 45,
+    defender_level = 42,
+    weapon_power = 110.5,
+    armor_defense = 75.8,
+    critical_chance = 0.12
+}
+
+local result: {CombatResult}, err: string? = client
+    :rpc("calculate_damage", params)
+    :executeTyped()
+
+if err then
+    warn("Type validation failed:", err)
+elseif #result > 0 then
+    print("Damage dealt:", result[1].damage)
+end
+```
+
+---
+
+## Filters & Method Chaining with RPC
+
+RPC function calls can be followed up with filters and modifiers, just like select. However, make sure to respect the chaining order: filters first, modifiers last.
+
+### Correct Order for RPC
+```lua
+-- RPC can be followed by select-like modifiers
+local result = client
+    :rpc("get_complex_data", {          -- Step 1: Call function
+        filter = "active",
+        limit = 100
+    })
+    :order("created_at", {              -- Step 2: Apply sorting (if function returns table)
+        ascending = false
+    })
+    :limit(10)                          -- Step 3: Apply limit
+    :execute()                          -- Step 4: Execute
+
+-- Some functions return single values, not tables
+local singleValue = client
+    :rpc("get_player_count", {          -- Returns integer, not a table
+        status = "active"
+    })
+    :single()                           -- Use single() for non-table returns
+    :execute()
+```
+
+---
+
+## Error Handling
+
+### Common PostgreSQL Function Errors
+
+```lua
+-- Function doesn't exist
+local result, err = client
+    :rpc("nonexistent_function", {})
+    :execute()
+
+if err then
+    warn(err)  -- "function nonexistent_function() does not exist"
+end
+
+-- Wrong parameter types
+local result, err = client
+    :rpc("get_user_by_id", {
+        user_id = "not_a_number"  -- Expected integer
+    })
+    :execute()
+
+if err then
+    warn(err)  -- "Invalid input syntax for type integer: "not_a_number"
+end
+
+-- Missing required parameters
+local result, err = client
+    :rpc("authenticate_user", {
+        -- Missing password_hash parameter
+        username = "test"
+    })
+    :execute()
+
+if err then
+    warn(err)  -- "null value in column 'password_hash' violates not-null constraint"
+end
+```
+
+### Graceful Error Handling Pattern
+
+```lua
+local function safeRpc(functionName, params, defaultValue)
+    local result, err = client
+        :rpc(functionName, params)
+        :returns("minimal")
+        :execute()
+
+    if err then
+        -- Check for specific PostgreSQL errors
+        if string.find(err:lower(), "does not exist") then
+            warn(string.format("Function '%s' not found in database", functionName))
+        elseif string.find(err:lower(), "permission denied") then
+            warn(string.format("No permission to call function '%s'", functionName))
+        elseif string.find(err:lower(), "division by zero") then
+            warn("Mathematical error in function logic")
+        else
+            warn(string.format("RPC '%s' failed: %s", functionName, err))
+        end
+
+        -- Return default value on error
+        return defaultValue
+    end
+
+    return result
+end
+
+-- Usage
+local playerCount = safeRpc("get_active_player_count", {}, 0)
+print("Active players:", playerCount)
+```
+
+### Transaction-Safe Function Calls
+
+```lua
+local function executeInTransaction(functionCalls)
+    -- Start a transaction
+    local transactionResult, transactionErr = client
+        :rpc("begin_transaction")
+        :execute()
+
+    if transactionErr then
+        return nil, "Failed to start transaction: " .. transactionErr
+    end
+
+    local results = {}
+    local hasError = false
+
+    -- Execute multiple functions in transaction
+    for _, funcCall in ipairs(functionCalls) do
+        local result, err = client
+            :rpc(funcCall.name, funcCall.params)
+            :execute()
+
+        if err then
+            -- Rollback on any error
+            client:rpc("rollback_transaction"):execute()
+            return nil, string.format("Transaction failed at '%s': %s",
+                funcCall.name, err)
+        end
+
+        table.insert(results, result)
+    end
+
+    -- Commit if all succeeded
+    local commitResult, commitErr = client
+        :rpc("commit_transaction")
+        :execute()
+
+    if commitErr then
+        return nil, "Failed to commit transaction: " .. commitErr
+    end
+
+    return results, nil
+end
+
+-- Usage
+local transactionResults, transErr = executeInTransaction({
+    { name = "deduct_gold", params = { player_id = 123, amount = 100 } },
+    { name = "add_item", params = { player_id = 123, item_id = 456 } },
+    { name = "log_transaction", params = { player_id = 123, action = "purchase" } }
+})
+```
