@@ -21,7 +21,7 @@ export function baseOptions(): BaseLayoutProps {
         nav: {
             title: (
                 <>
-                    <Image src="/logo.png" alt="AnnUI" width={24} height={24} />
+                    <Image src="/logo.png" alt="Supabase" width={24} height={24} />
                     <span className="font-medium">Roblox Supabase</span>
                 </>
             ),
