@@ -13,6 +13,7 @@
         "Database/update-data",
         "Database/upsert-data",
         "Database/delete-data",
+        "Database/call-postgres-function",
 
         "---Filters And Modifiers---",
         "FiltersAndModifiers/filters",
