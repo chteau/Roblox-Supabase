@@ -1,0 +1,11 @@
+[package]
+name = "chteau/roblox-supabase"
+description = "A comprehensive, type-safe Supabase client for Roblox Luau."
+version = "1.0.0"
+license = "MIT"
+authors = ["Cheeteau"]
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "server"
+exclude = ["package.json", "package-lock.json", "node_modules", "docs", "images", "README.md", "pull_request_template.md", "LICENSE"]
+
+[dependencies]
