@@ -75,6 +75,64 @@ In order to install **Roblox Supabase** using git submodules, make sure:
     ```
 </Callout>
 
+### Using Wally
+
+You can find the package on [this link](https://wally.run/package/chteau/roblox-supabase).
+
+Using wally, make sure that:
+- Aftman is installed.
+- Wally is initialized in your project.
+
+<Steps>
+    <Step>
+        In `wally.toml`, add this line:
+
+        ```toml
+        [server-dependencies]
+        roblox-supabase = "chteau/roblox-supabase@<THE_LATEST_VERSION>"
+        ...
+        ```
+    </Step>
+
+    <Step>
+        If you use **Rojo**, make sure that in your `default.project.json` file, you reference the `ServerPackage` folder in order for it to be replicated on your studio.
+        (You don't have to put this in `ServerStorage`, but I recommend putting this in.) - See more on [this link](https://alexasterisk.github.io/WallyPackages/import/installation/#using-rojo).
+        ```json
+        {
+            "name": "project-name"
+            "tree": {
+                "$className": "DataModel",
+                ...
+                "ServerStorage": {
+                    "Packages": {
+                        "$path": "ServerPackages"
+                    }
+                },
+                ...
+            }
+        }
+        ```
+    </Step>
+
+    <Step>
+        In your CLI, enter this command:
+
+        ```bash
+        wally install
+        ```
+    </Step>
+
+    <Step>
+        You can now access **Roblox Supabase** in your server scripts using:
+        ```lua
+        local SS = game:GetService("ServerStorage")
+        local Supabase = require(SS.Packages["roblox-supabase"])
+
+        ...
+        ```
+    </Step>
+</Steps>
+
 <hr />
 
 # Initializing
