@@ -4,7 +4,6 @@
 	This module serves as the primary entry point for the Supabase client, providing:
 	- Database queries via PostgREST (select, insert, update, delete, upsert)
 	- PostgreSQL function calls (RPC)
-	- File storage operations
 	- Edge Functions invocation
 	- Comprehensive unit testing capabilities
 
@@ -12,13 +11,11 @@
 
 	@module Supabase
 	@see Rest
-	@see Storage
 	@see EdgeFunctions
 	@see UnitTests
 ]]
 
 local Rest = require(script.Rest)
-local Storage = require(script.Storage)
 local EdgeFunctions = require(script.EdgeFunctions)
 local UnitTests = require(script.UnitTests)
 local RunService = game:GetService("RunService")
@@ -46,7 +43,6 @@ export type RPCFilterStage = RestTypes.RPCFilterStage
 ]]
 export type SupabaseClient = {
 	rest: Rest.RestClient,
-	storage: any, -- Storage.StorageClient (typed internally)
 	functions: EdgeFunctions.FunctionsClient,
 	_unitTests: UnitTests.UnitTests,
 
@@ -80,7 +76,6 @@ function Supabase.new(baseUrl: string, key: string): SupabaseClient
 
 	-- Initialize service clients
 	self.rest = Rest.new(baseUrl, key)
-	self.storage = Storage.new(baseUrl, key)
 	self.functions = EdgeFunctions.new(baseUrl, key)
 
 	--[[
